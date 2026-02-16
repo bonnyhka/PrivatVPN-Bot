@@ -47,7 +47,7 @@ export function PaymentView({ plan, onNavigate }: PaymentViewProps) {
   }
 
   const handleCopyKey = () => {
-    navigator.clipboard.writeText('vless://demo-key@ghostvpn.io:443?type=ws&security=tls')
+    navigator.clipboard.writeText('vless://demo-key@sentinel-vpn.io:443?type=ws&security=tls')
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -79,7 +79,7 @@ export function PaymentView({ plan, onNavigate }: PaymentViewProps) {
           <p className="mb-2 text-xs text-muted-foreground">Ваш VPN ключ:</p>
           <div className="flex items-center gap-2 rounded-lg bg-secondary p-3">
             <code className="flex-1 truncate font-mono text-xs text-primary">
-              vless://demo-key@ghostvpn.io:443
+              vless://demo-key@sentinel-vpn.io:443
             </code>
             <button
               onClick={handleCopyKey}

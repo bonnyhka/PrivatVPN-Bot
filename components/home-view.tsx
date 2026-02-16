@@ -1,32 +1,39 @@
 'use client'
 
 import { useState } from 'react'
-import { Shield, Wifi, Globe, Zap, ChevronDown, Signal } from 'lucide-react'
+import { Shield, Wifi, Globe, Zap, ChevronDown, Signal, Users, Gift } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { User } from '@/lib/types'
-import { LOCATIONS } from '@/lib/store'
+import type { User, AppView } from '@/lib/types'
+import { LOCATIONS, MOCK_REFERRALS } from '@/lib/store'
 
 interface HomeViewProps {
   user: User
+  onNavigate: (view: AppView) => void
 }
 
-export function HomeView({ user }: HomeViewProps) {
+export function HomeView({ user, onNavigate }: HomeViewProps) {
   const [connected, setConnected] = useState(false)
   const [selectedLocation, setSelectedLocation] = useState(LOCATIONS[0])
   const [showLocations, setShowLocations] = useState(false)
   const hasSubscription = user.subscription?.status === 'active'
+  const referralCount = MOCK_REFERRALS.filter(r => r.fromUserId === user.id).length
 
   return (
     <div className="flex min-h-screen flex-col items-center px-4 pb-24 pt-6">
       {/* Header */}
-      <div className="mb-8 flex w-full items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-foreground">GhostVPN</h1>
-          <p className="text-xs text-muted-foreground">
-            {hasSubscription
-              ? `${user.subscription?.planId === 'turbo' ? 'Turbo' : user.subscription?.planId === 'phantom' ? 'Phantom' : user.subscription?.planId === 'ghost-year' ? 'Ghost Year' : 'Starter'}`
-              : 'Нет подписки'}
-          </p>
+      <div className="mb-6 flex w-full items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15">
+            <Shield className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-foreground">Sentinel VPN</h1>
+            <p className="text-[10px] text-muted-foreground">
+              {hasSubscription
+                ? user.subscription?.planId === 'standard' ? 'Standard' : user.subscription?.planId === 'pro' ? 'Pro' : user.subscription?.planId === 'annual' ? 'Pro Annual' : 'Lite'
+                : 'Нет подписки'}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <div className={cn(
@@ -40,12 +47,12 @@ export function HomeView({ user }: HomeViewProps) {
       </div>
 
       {/* Connection Button */}
-      <div className="relative mb-8 flex flex-col items-center">
+      <div className="relative mb-6 flex flex-col items-center">
         <button
           onClick={() => hasSubscription && setConnected(!connected)}
           disabled={!hasSubscription}
           className={cn(
-            'relative flex h-44 w-44 items-center justify-center rounded-full border-2 transition-all duration-500',
+            'relative flex h-40 w-40 items-center justify-center rounded-full border-2 transition-all duration-500',
             connected
               ? 'border-primary bg-primary/10 glow-green'
               : hasSubscription
@@ -58,7 +65,7 @@ export function HomeView({ user }: HomeViewProps) {
           )}
           <div className="flex flex-col items-center gap-2">
             <Shield className={cn(
-              'h-12 w-12 transition-colors duration-500',
+              'h-11 w-11 transition-colors duration-500',
               connected ? 'text-primary drop-shadow-[0_0_12px_hsl(145,70%,45%)]' : 'text-muted-foreground'
             )} />
             <span className={cn(
@@ -72,7 +79,7 @@ export function HomeView({ user }: HomeViewProps) {
       </div>
 
       {/* Status Cards */}
-      <div className="mb-6 grid w-full max-w-sm grid-cols-3 gap-3">
+      <div className="mb-5 grid w-full max-w-sm grid-cols-3 gap-3">
         <div className="flex flex-col items-center rounded-xl border border-border bg-card p-3">
           <Wifi className={cn('mb-1 h-4 w-4', connected ? 'text-primary' : 'text-muted-foreground')} />
           <span className="text-[10px] text-muted-foreground">Скорость</span>
@@ -95,6 +102,28 @@ export function HomeView({ user }: HomeViewProps) {
           </span>
         </div>
       </div>
+
+      {/* Referral Banner */}
+      <button
+        onClick={() => onNavigate('referral')}
+        className="mb-5 flex w-full max-w-sm items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3.5 transition-colors hover:border-primary/40"
+      >
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15">
+          <Gift className="h-4 w-4 text-primary" />
+        </div>
+        <div className="flex-1 text-left">
+          <p className="text-sm font-semibold text-foreground">Пригласи друга -- получи 30 руб</p>
+          <p className="text-[10px] text-muted-foreground">
+            {referralCount > 0
+              ? `Уже пригласили: ${referralCount} друзей`
+              : 'Делись ссылкой и зарабатывай'}
+          </p>
+        </div>
+        <div className="flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-1">
+          <Users className="h-3 w-3 text-primary" />
+          <span className="text-xs font-bold text-primary">{referralCount}</span>
+        </div>
+      </button>
 
       {/* Server Selection */}
       <div className="w-full max-w-sm">
@@ -140,9 +169,7 @@ export function HomeView({ user }: HomeViewProps) {
                 <div className="flex items-center gap-2">
                   <Signal className="h-3 w-3 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">{loc.ping} мс</span>
-                  <div className={cn(
-                    'h-1.5 w-8 rounded-full bg-secondary overflow-hidden'
-                  )}>
+                  <div className="h-1.5 w-8 overflow-hidden rounded-full bg-secondary">
                     <div
                       className={cn(
                         'h-full rounded-full',

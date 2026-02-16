@@ -1,8 +1,8 @@
 'use client'
 
-import { Users, Key, Headphones, ShieldCheck, Activity, TrendingUp, UserPlus, BarChart3 } from 'lucide-react'
+import { Users, Key, Headphones, ShieldCheck, Activity, TrendingUp, UserPlus, BarChart3, MessageSquare, Gift } from 'lucide-react'
 import type { AppView } from '@/lib/types'
-import { MOCK_USERS, MOCK_VPN_KEYS, MOCK_TICKETS } from '@/lib/store'
+import { MOCK_USERS, MOCK_VPN_KEYS, MOCK_TICKETS, MOCK_REFERRALS } from '@/lib/store'
 import { cn } from '@/lib/utils'
 
 interface AdminViewProps {
@@ -31,7 +31,7 @@ export function AdminView({ onNavigate }: AdminViewProps) {
     },
     {
       label: 'Доход/мес',
-      value: '12.4K',
+      value: '4.2K',
       change: '+23%',
       icon: TrendingUp,
     },
@@ -61,10 +61,17 @@ export function AdminView({ onNavigate }: AdminViewProps) {
     },
     {
       view: 'admin-admins',
-      label: 'Админы и саппорт',
-      description: 'Выдача ролей и управление командой',
+      label: 'Команда',
+      description: 'Выдача ролей и управление',
       icon: ShieldCheck,
       count: MOCK_USERS.filter((u) => u.role !== 'user').length,
+    },
+    {
+      view: 'admin-messages',
+      label: 'Сообщения бота',
+      description: 'Тексты и шаблоны уведомлений',
+      icon: MessageSquare,
+      count: 7,
     },
   ]
 
@@ -76,7 +83,7 @@ export function AdminView({ onNavigate }: AdminViewProps) {
         </div>
         <div>
           <h1 className="text-xl font-bold text-foreground">Админ панель</h1>
-          <p className="text-xs text-muted-foreground">Управление сервисом</p>
+          <p className="text-xs text-muted-foreground">Sentinel VPN</p>
         </div>
       </div>
 
@@ -100,6 +107,21 @@ export function AdminView({ onNavigate }: AdminViewProps) {
             </div>
           )
         })}
+      </div>
+
+      {/* Referral stats */}
+      <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Gift className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold text-foreground">Реферальная система</span>
+          </div>
+          <span className="text-xs font-bold text-primary">{MOCK_REFERRALS.length} приглашений</span>
+        </div>
+        <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+          <span>Выплачено: {MOCK_REFERRALS.filter(r => r.status === 'credited').length * 30} руб</span>
+          <span>Ожидает: {MOCK_REFERRALS.filter(r => r.status === 'pending').length * 30} руб</span>
+        </div>
       </div>
 
       {/* Sections */}

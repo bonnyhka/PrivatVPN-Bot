@@ -55,14 +55,34 @@ export interface SupportTicket {
   createdAt: string
 }
 
+export interface Referral {
+  id: string
+  fromUserId: string
+  toUserId: string
+  toUsername: string
+  reward: number
+  status: 'pending' | 'credited'
+  createdAt: string
+}
+
+export interface BotMessage {
+  id: string
+  name: string
+  trigger: string
+  text: string
+  parseMode: 'HTML' | 'Markdown'
+}
+
 export type AppView =
   | 'home'
   | 'plans'
   | 'payment'
   | 'my-vpn'
   | 'support'
+  | 'referral'
   | 'admin'
   | 'admin-users'
   | 'admin-keys'
   | 'admin-support'
   | 'admin-admins'
+  | 'admin-messages'

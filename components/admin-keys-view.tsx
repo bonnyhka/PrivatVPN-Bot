@@ -14,7 +14,7 @@ export function AdminKeysView({ onNavigate }: AdminKeysViewProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newKeyUsername, setNewKeyUsername] = useState('')
-  const [newKeyPlan, setNewKeyPlan] = useState(PLANS[0].id)
+  const [newKeyPlan, setNewKeyPlan] = useState(PLANS[0]?.id || 'lite')
 
   const handleCopy = (id: string, key: string) => {
     navigator.clipboard.writeText(key)

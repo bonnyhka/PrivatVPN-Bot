@@ -1,76 +1,75 @@
-import type { Plan, VpnKey, User, SupportTicket } from './types'
+import type { Plan, VpnKey, User, SupportTicket, Referral, BotMessage } from './types'
 
 export const PLANS: Plan[] = [
   {
-    id: 'starter',
-    name: 'Starter',
+    id: 'lite',
+    name: 'Lite',
     price: 50,
     period: '/ мес',
     periodMonths: 1,
     features: [
       '1 устройство',
       '5 локаций',
-      'Базовая скорость',
+      'Скорость до 50 Мбит/с',
       'Без рекламы',
     ],
     devicesCount: 1,
     speedLabel: '50 Мбит/с',
   },
   {
-    id: 'turbo',
-    name: 'Turbo',
-    price: 149,
+    id: 'standard',
+    name: 'Standard',
+    price: 120,
     period: '/ мес',
     periodMonths: 1,
     features: [
       '3 устройства',
-      '15 локаций',
-      'Высокая скорость',
-      'Без рекламы',
+      '12 локаций',
+      'Скорость до 200 Мбит/с',
       'Kill Switch',
+      'Без логов',
     ],
     popular: true,
-    badge: 'Популярный',
+    badge: 'Хит',
     devicesCount: 3,
     speedLabel: '200 Мбит/с',
   },
   {
-    id: 'phantom',
-    name: 'Phantom',
-    price: 249,
+    id: 'pro',
+    name: 'Pro',
+    price: 199,
     period: '/ мес',
     periodMonths: 1,
     features: [
       '5 устройств',
-      '30+ локаций',
-      'Макс. скорость',
-      'Без рекламы',
-      'Kill Switch',
-      'Double VPN',
-    ],
-    badge: 'PRO',
-    devicesCount: 5,
-    speedLabel: '500 Мбит/с',
-  },
-  {
-    id: 'ghost-year',
-    name: 'Ghost Year',
-    price: 1990,
-    period: '/ год',
-    periodMonths: 12,
-    features: [
-      '10 устройств',
-      'Все локации',
-      'Макс. скорость',
-      'Без рекламы',
+      '25+ локаций',
+      'Безлимитная скорость',
       'Kill Switch',
       'Double VPN',
       'Приоритетная поддержка',
-      'Выделенный IP',
     ],
-    badge: '-33%',
-    discount: 33,
-    devicesCount: 10,
+    badge: 'PRO',
+    devicesCount: 5,
+    speedLabel: 'Без лимита',
+  },
+  {
+    id: 'annual',
+    name: 'Pro Годовой',
+    price: 499,
+    period: '/ 3 мес',
+    periodMonths: 3,
+    features: [
+      '7 устройств',
+      'Все локации',
+      'Безлимитная скорость',
+      'Kill Switch',
+      'Double VPN',
+      'Выделенный IP',
+      'Приоритетная поддержка 24/7',
+    ],
+    badge: '-40%',
+    discount: 40,
+    devicesCount: 7,
     speedLabel: 'Без лимита',
   },
 ]
@@ -78,13 +77,13 @@ export const PLANS: Plan[] = [
 export const MOCK_USER: User = {
   id: '1',
   telegramId: '123456789',
-  username: 'ghost_user',
-  displayName: 'Ghost User',
+  username: 'sentinel_user',
+  displayName: 'Alex K.',
   role: 'owner',
   createdAt: '2025-01-15',
   subscription: {
     id: 'sub-1',
-    planId: 'turbo',
+    planId: 'standard',
     status: 'active',
     expiresAt: '2026-03-15',
     vpnKey: 'vless://abc123...xyz789',
@@ -95,30 +94,30 @@ export const MOCK_USER: User = {
 export const MOCK_VPN_KEYS: VpnKey[] = [
   {
     id: 'key-1',
-    key: 'vless://user1@server1.ghostvpn.io:443?type=ws&security=tls',
+    key: 'vless://user1@nl1.sentinel-vpn.io:443?type=ws&security=tls',
     userId: '1',
-    username: 'ghost_user',
-    planName: 'Turbo',
+    username: 'sentinel_user',
+    planName: 'Standard',
     createdAt: '2025-12-01',
     expiresAt: '2026-03-15',
     status: 'active',
   },
   {
     id: 'key-2',
-    key: 'vless://user2@server2.ghostvpn.io:443?type=ws&security=tls',
+    key: 'vless://user2@de1.sentinel-vpn.io:443?type=ws&security=tls',
     userId: '2',
     username: 'cyber_fox',
-    planName: 'Phantom',
+    planName: 'Pro',
     createdAt: '2025-11-20',
     expiresAt: '2026-02-20',
     status: 'active',
   },
   {
     id: 'key-3',
-    key: 'vless://user3@server1.ghostvpn.io:443?type=ws&security=tls',
+    key: 'vless://user3@fi1.sentinel-vpn.io:443?type=ws&security=tls',
     userId: '3',
     username: 'shadow_net',
-    planName: 'Starter',
+    planName: 'Lite',
     createdAt: '2025-10-05',
     expiresAt: '2025-12-05',
     status: 'expired',
@@ -134,7 +133,7 @@ export const MOCK_USERS: User[] = [
     displayName: 'Cyber Fox',
     role: 'admin',
     createdAt: '2025-02-10',
-    subscription: { id: 'sub-2', planId: 'phantom', status: 'active', expiresAt: '2026-02-20', autoRenew: true },
+    subscription: { id: 'sub-2', planId: 'pro', status: 'active', expiresAt: '2026-02-20', autoRenew: true },
   },
   {
     id: '3',
@@ -143,7 +142,7 @@ export const MOCK_USERS: User[] = [
     displayName: 'Shadow Net',
     role: 'support',
     createdAt: '2025-03-05',
-    subscription: { id: 'sub-3', planId: 'starter', status: 'expired', expiresAt: '2025-12-05', autoRenew: false },
+    subscription: { id: 'sub-3', planId: 'lite', status: 'expired', expiresAt: '2025-12-05', autoRenew: false },
   },
   {
     id: '4',
@@ -160,7 +159,7 @@ export const MOCK_USERS: User[] = [
     displayName: 'Dark Angel',
     role: 'user',
     createdAt: '2025-08-20',
-    subscription: { id: 'sub-5', planId: 'turbo', status: 'active', expiresAt: '2026-04-01', autoRenew: true },
+    subscription: { id: 'sub-5', planId: 'standard', status: 'active', expiresAt: '2026-04-01', autoRenew: true },
   },
 ]
 
@@ -177,7 +176,7 @@ export const MOCK_TICKETS: SupportTicket[] = [
     id: 'ticket-2',
     userId: '5',
     username: 'dark_angel',
-    subject: 'Низкая скорость на тарифе Turbo',
+    subject: 'Низкая скорость на тарифе Standard',
     status: 'in-progress',
     assignedTo: 'shadow_net',
     createdAt: '2026-02-13',
@@ -185,7 +184,7 @@ export const MOCK_TICKETS: SupportTicket[] = [
   {
     id: 'ticket-3',
     userId: '1',
-    username: 'ghost_user',
+    username: 'sentinel_user',
     subject: 'Вопрос про Double VPN',
     status: 'resolved',
     assignedTo: 'shadow_net',
@@ -200,4 +199,138 @@ export const LOCATIONS = [
   { country: 'США', flag: 'US', ping: 89, load: 67 },
   { country: 'Япония', flag: 'JP', ping: 142, load: 41 },
   { country: 'Сингапур', flag: 'SG', ping: 128, load: 33 },
+]
+
+export const MOCK_REFERRALS: Referral[] = [
+  {
+    id: 'ref-1',
+    fromUserId: '1',
+    toUserId: '4',
+    toUsername: 'neo_matrix',
+    reward: 30,
+    status: 'credited',
+    createdAt: '2025-11-20',
+  },
+  {
+    id: 'ref-2',
+    fromUserId: '1',
+    toUserId: '5',
+    toUsername: 'dark_angel',
+    reward: 30,
+    status: 'credited',
+    createdAt: '2025-12-05',
+  },
+  {
+    id: 'ref-3',
+    fromUserId: '1',
+    toUserId: '6',
+    toUsername: 'new_user_123',
+    reward: 30,
+    status: 'pending',
+    createdAt: '2026-02-10',
+  },
+]
+
+export const BOT_MESSAGES: BotMessage[] = [
+  {
+    id: 'msg-start',
+    name: 'Приветствие',
+    trigger: '/start',
+    text: `<b>Sentinel VPN</b> -- твой щит в сети
+
+Безопасный, быстрый и анонимный VPN прямо в Telegram.
+
+<b>Что умеет бот:</b>
+-- Подключение VPN в 1 клик
+-- Управление подпиской
+-- Выбор серверов по всему миру
+-- Реферальная программа
+
+Нажми кнопку ниже, чтобы открыть приложение.`,
+    parseMode: 'HTML',
+  },
+  {
+    id: 'msg-payment-success',
+    name: 'Успешная оплата',
+    trigger: 'payment_success',
+    text: `<b>Оплата прошла успешно!</b>
+
+Тариф: <b>{plan_name}</b>
+Срок: до <b>{expire_date}</b>
+
+<b>Ваш VPN ключ:</b>
+<code>{vpn_key}</code>
+
+<b>Инструкция:</b>
+1. Скопируйте ключ выше
+2. Откройте V2RayNG (Android) или Streisand (iOS)
+3. Добавьте конфигурацию из буфера обмена
+4. Нажмите "Подключить"
+
+Приятного и безопасного серфинга!`,
+    parseMode: 'HTML',
+  },
+  {
+    id: 'msg-key-expiring',
+    name: 'Истекает подписка',
+    trigger: 'key_expiring_3d',
+    text: `<b>Ваша подписка истекает через 3 дня</b>
+
+Тариф: <b>{plan_name}</b>
+Истекает: <b>{expire_date}</b>
+
+Продлите подписку, чтобы не потерять доступ к VPN. Откройте приложение и перейдите в раздел "Мой VPN".
+
+Если у вас включено автопродление -- мы спишем оплату автоматически.`,
+    parseMode: 'HTML',
+  },
+  {
+    id: 'msg-key-expired',
+    name: 'Подписка истекла',
+    trigger: 'key_expired',
+    text: `<b>Ваша подписка истекла</b>
+
+Ваш VPN ключ больше не активен. Чтобы продолжить пользоваться Sentinel VPN, выберите тариф и оплатите подписку.
+
+Тарифы от <b>50 руб/мес</b> -- откройте приложение, чтобы посмотреть все планы.`,
+    parseMode: 'HTML',
+  },
+  {
+    id: 'msg-referral-reward',
+    name: 'Реферальный бонус',
+    trigger: 'referral_reward',
+    text: `<b>+{reward} руб на баланс!</b>
+
+Ваш друг <b>@{friend_username}</b> подключил Sentinel VPN по вашей ссылке. Бонус начислен на ваш баланс.
+
+Приглашайте друзей -- получайте <b>30 руб</b> за каждого!
+
+Ваша ссылка: <code>{ref_link}</code>`,
+    parseMode: 'HTML',
+  },
+  {
+    id: 'msg-support-reply',
+    name: 'Ответ поддержки',
+    trigger: 'support_reply',
+    text: `<b>Ответ от поддержки</b>
+
+Тикет: <b>{ticket_subject}</b>
+
+{reply_text}
+
+Если вопрос решён -- нажмите "Закрыть тикет" в приложении.`,
+    parseMode: 'HTML',
+  },
+  {
+    id: 'msg-new-server',
+    name: 'Новый сервер',
+    trigger: 'manual_broadcast',
+    text: `<b>Новый сервер доступен!</b>
+
+Мы добавили сервер в <b>{country}</b>
+Пинг: <b>{ping} мс</b>
+
+Переключитесь на новый сервер в приложении для лучшей скорости.`,
+    parseMode: 'HTML',
+  },
 ]

@@ -124,7 +124,7 @@ export function MyVpnView({ user, onNavigate }: MyVpnViewProps) {
           </button>
         </div>
         <p className="mt-2 text-[10px] text-muted-foreground">
-          Скопируйте ключ и вставьте в приложение V2RayNG или Streisand
+          Скопируйте ключ и вставьте в V2RayNG (Android) или Streisand (iOS)
         </p>
       </div>
 

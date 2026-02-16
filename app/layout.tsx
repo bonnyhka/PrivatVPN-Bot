@@ -6,7 +6,7 @@ const _inter = Inter({ subsets: ['latin', 'cyrillic'], variable: '--font-inter' 
 const _jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains' })
 
 export const metadata: Metadata = {
-  title: 'GhostVPN - Telegram Mini App',
+  title: 'Sentinel VPN - Telegram Mini App',
   description: 'Быстрый и безопасный VPN сервис через Telegram',
 }
 

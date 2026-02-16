@@ -11,10 +11,10 @@ interface PlansViewProps {
 }
 
 const PLAN_ICONS: Record<string, typeof Sparkles> = {
-  starter: Sparkles,
-  turbo: Zap,
-  phantom: Crown,
-  'ghost-year': Rocket,
+  lite: Sparkles,
+  standard: Zap,
+  pro: Crown,
+  annual: Rocket,
 }
 
 export function PlansView({ onNavigate, onSelectPlan }: PlansViewProps) {
