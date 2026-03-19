@@ -33,7 +33,7 @@ const PLAN_THEMES: Record<string, { icon: typeof Sparkles; gradient: string; acc
     icon: Gem,
     gradient: 'from-amber-500/25 to-orange-500/15',
     accent: 'text-amber-400',
-    glow: 'shadow-[0_0_30px_hsl(45_90%_55%/0.15)]',
+    glow: 'shadow-[0_0_30px_hsl(45_90%_55%/0.12)]',
   },
 }
 
@@ -110,7 +110,7 @@ export function PlansView({ onNavigate, onSelectPlan }: PlansViewProps) {
                       'mt-1 inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold',
                       plan.popular
                         ? 'bg-primary text-primary-foreground'
-                        : plan.discount
+                        : plan.id === 'citadel'
                         ? 'bg-amber-500/20 text-amber-400'
                         : 'bg-violet-500/20 text-violet-400'
                     )}>

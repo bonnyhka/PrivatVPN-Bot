@@ -73,6 +73,21 @@ export interface BotMessage {
   parseMode: 'HTML' | 'Markdown'
 }
 
+export interface Discount {
+  id: string
+  code: string
+  type: 'percent' | 'fixed'
+  value: number
+  minPurchase?: number
+  maxUses?: number
+  usedCount: number
+  validFrom: string
+  validTo: string
+  applicablePlans: string[] | 'all'
+  isActive: boolean
+  description?: string
+}
+
 export type AppView =
   | 'home'
   | 'plans'
@@ -86,3 +101,4 @@ export type AppView =
   | 'admin-support'
   | 'admin-admins'
   | 'admin-messages'
+  | 'admin-discounts'

@@ -1,4 +1,4 @@
-import type { Plan, VpnKey, User, SupportTicket, Referral, BotMessage } from './types'
+import type { Plan, VpnKey, User, SupportTicket, Referral, BotMessage, Discount } from './types'
 
 export const PLANS: Plan[] = [
   {
@@ -55,20 +55,19 @@ export const PLANS: Plan[] = [
   {
     id: 'citadel',
     name: 'Citadel',
-    price: 449,
-    period: '/ 3 мес',
-    periodMonths: 3,
+    price: 299,
+    period: '/ мес',
+    periodMonths: 1,
     features: [
-      '7 устройств',
+      '10 устройств',
       'Все серверы мира',
       'Без ограничений скорости',
       'Double VPN + Tor',
       'Выделенный IP',
       'Поддержка 24/7 VIP',
     ],
-    badge: '-17%',
-    discount: 17,
-    devicesCount: 7,
+    badge: 'VIP',
+    devicesCount: 10,
     speedLabel: 'Без лимита',
   },
 ]
@@ -227,6 +226,62 @@ export const MOCK_REFERRALS: Referral[] = [
     reward: 30,
     status: 'pending',
     createdAt: '2026-02-10',
+  },
+]
+
+export const MOCK_DISCOUNTS: Discount[] = [
+  {
+    id: 'disc-1',
+    code: 'WELCOME20',
+    type: 'percent',
+    value: 20,
+    usedCount: 145,
+    maxUses: 500,
+    validFrom: '2026-01-01',
+    validTo: '2026-06-30',
+    applicablePlans: 'all',
+    isActive: true,
+    description: 'Скидка 20% для новых пользователей',
+  },
+  {
+    id: 'disc-2',
+    code: 'SPRING50',
+    type: 'fixed',
+    value: 50,
+    minPurchase: 99,
+    usedCount: 78,
+    maxUses: 200,
+    validFrom: '2026-03-01',
+    validTo: '2026-03-31',
+    applicablePlans: ['guardian', 'fortress', 'citadel'],
+    isActive: true,
+    description: 'Весенняя акция -50 руб',
+  },
+  {
+    id: 'disc-3',
+    code: 'VIP30',
+    type: 'percent',
+    value: 30,
+    usedCount: 23,
+    maxUses: 50,
+    validFrom: '2026-02-01',
+    validTo: '2026-04-30',
+    applicablePlans: ['citadel'],
+    isActive: true,
+    description: 'Скидка 30% только на Citadel',
+  },
+  {
+    id: 'disc-4',
+    code: 'NEWYEAR25',
+    type: 'percent',
+    value: 25,
+    usedCount: 312,
+    maxUses: 300,
+    validFrom: '2025-12-25',
+    validTo: '2026-01-10',
+    applicablePlans: 'all',
+    isActive: false,
+    description: 'Новогодняя скидка (завершена)',
   },
 ]
 
