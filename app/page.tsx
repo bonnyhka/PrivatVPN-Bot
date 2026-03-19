@@ -17,6 +17,7 @@ import { AdminSupportView } from '@/components/admin-support-view'
 import { AdminAdminsView } from '@/components/admin-admins-view'
 import { AdminMessagesView } from '@/components/admin-messages-view'
 import { AdminDiscountsView } from '@/components/admin-discounts-view'
+import { AdminPricingView } from '@/components/admin-pricing-view'
 
 export default function Page() {
   const [currentView, setCurrentView] = useState<AppView>('home')
@@ -47,6 +48,7 @@ export default function Page() {
       {currentView === 'admin-admins' && <AdminAdminsView onNavigate={handleNavigate} />}
       {currentView === 'admin-messages' && <AdminMessagesView onNavigate={handleNavigate} />}
       {currentView === 'admin-discounts' && <AdminDiscountsView onNavigate={handleNavigate} />}
+      {currentView === 'admin-pricing' && <AdminPricingView onNavigate={handleNavigate} />}
 
       <BottomNav currentView={currentView} onNavigate={handleNavigate} userRole={user.role} />
     </div>

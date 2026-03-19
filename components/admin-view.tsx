@@ -5,7 +5,7 @@ import {
   Users, Key, Headphones, ShieldCheck, Activity, TrendingUp,
   UserPlus, BarChart3, MessageSquare, Gift, Server, Wifi,
   ArrowUp, ArrowDown, Gauge, Clock, Zap, Globe, AlertTriangle,
-  CheckCircle2, XCircle, RefreshCw, Tag
+  CheckCircle2, XCircle, RefreshCw, Tag, DollarSign
 } from 'lucide-react'
 import type { AppView } from '@/lib/types'
 import { MOCK_USERS, MOCK_VPN_KEYS, MOCK_TICKETS, MOCK_REFERRALS, LOCATIONS, MOCK_DISCOUNTS } from '@/lib/store'
@@ -114,6 +114,7 @@ export function AdminView({ onNavigate }: AdminViewProps) {
   const adminSections: { view: AppView; label: string; description: string; icon: typeof Users; count?: number }[] = [
     { view: 'admin-users', label: 'Пользователи', description: 'Управление ролями и аккаунтами', icon: Users, count: MOCK_USERS.length },
     { view: 'admin-keys', label: 'VPN ключи', description: 'Выдача и управление ключами', icon: Key, count: MOCK_VPN_KEYS.length },
+    { view: 'admin-pricing', label: 'Тарифы и цены', description: 'Управление ценами и функциями', icon: DollarSign, count: 4 },
     { view: 'admin-discounts', label: 'Скидки', description: 'Промокоды и акции', icon: Tag, count: activeDiscountsCount },
     { view: 'admin-support', label: 'Поддержка', description: 'Тикеты и назначение агентов', icon: Headphones, count: MOCK_TICKETS.filter(t => t.status !== 'resolved').length },
     { view: 'admin-admins', label: 'Команда', description: 'Выдача ролей и управление', icon: ShieldCheck, count: MOCK_USERS.filter(u => u.role !== 'user').length },

@@ -102,3 +102,4 @@ export type AppView =
   | 'admin-admins'
   | 'admin-messages'
   | 'admin-discounts'
+  | 'admin-pricing'
