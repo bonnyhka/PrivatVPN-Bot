@@ -56,7 +56,7 @@ export function HomeView({ user, onNavigate }: HomeViewProps) {
             <Shield className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-foreground">Sentinel VPN</h1>
+            <h1 className="text-base font-bold text-foreground">PrivatVPN</h1>
             <p className="text-[10px] text-muted-foreground">
               {user.displayName} &middot; @{user.username}
             </p>
@@ -85,7 +85,7 @@ export function HomeView({ user, onNavigate }: HomeViewProps) {
                 </div>
                 <div>
                   <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Sentinel VPN
+                    PrivatVPN
                   </p>
                   <p className="text-sm font-bold text-foreground">{plan?.name || 'Plan'}</p>
                 </div>

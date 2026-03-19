@@ -14,40 +14,40 @@ body {
 
 @layer base {
   :root {
-    --background: 150 20% 5%;
-    --foreground: 140 15% 90%;
-    --card: 150 18% 8%;
-    --card-foreground: 140 15% 90%;
-    --popover: 150 18% 8%;
-    --popover-foreground: 140 15% 90%;
-    --primary: 145 70% 45%;
-    --primary-foreground: 150 20% 5%;
-    --secondary: 150 15% 14%;
-    --secondary-foreground: 140 15% 85%;
-    --muted: 150 12% 12%;
-    --muted-foreground: 140 10% 55%;
-    --accent: 145 70% 45%;
-    --accent-foreground: 150 20% 5%;
+    --background: 220 25% 5%;
+    --foreground: 210 20% 92%;
+    --card: 220 22% 8%;
+    --card-foreground: 210 20% 92%;
+    --popover: 220 22% 8%;
+    --popover-foreground: 210 20% 92%;
+    --primary: 210 100% 55%;
+    --primary-foreground: 220 25% 5%;
+    --secondary: 220 18% 14%;
+    --secondary-foreground: 210 18% 85%;
+    --muted: 220 15% 12%;
+    --muted-foreground: 210 12% 55%;
+    --accent: 210 100% 55%;
+    --accent-foreground: 220 25% 5%;
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 98%;
-    --border: 150 12% 16%;
-    --input: 150 12% 16%;
-    --ring: 145 70% 45%;
-    --chart-1: 145 70% 45%;
-    --chart-2: 160 60% 40%;
-    --chart-3: 130 50% 35%;
-    --chart-4: 170 55% 42%;
-    --chart-5: 155 65% 48%;
+    --border: 220 15% 16%;
+    --input: 220 15% 16%;
+    --ring: 210 100% 55%;
+    --chart-1: 210 100% 55%;
+    --chart-2: 200 80% 50%;
+    --chart-3: 220 70% 45%;
+    --chart-4: 190 85% 52%;
+    --chart-5: 205 90% 58%;
     --radius: 0.75rem;
-    --sidebar-background: 150 18% 7%;
-    --sidebar-foreground: 140 15% 90%;
-    --sidebar-primary: 145 70% 45%;
-    --sidebar-primary-foreground: 150 20% 5%;
-    --sidebar-accent: 150 15% 14%;
-    --sidebar-accent-foreground: 140 15% 85%;
-    --sidebar-border: 150 12% 16%;
-    --sidebar-ring: 145 70% 45%;
-    --success: 145 70% 45%;
+    --sidebar-background: 220 22% 7%;
+    --sidebar-foreground: 210 20% 92%;
+    --sidebar-primary: 210 100% 55%;
+    --sidebar-primary-foreground: 220 25% 5%;
+    --sidebar-accent: 220 18% 14%;
+    --sidebar-accent-foreground: 210 18% 85%;
+    --sidebar-border: 220 15% 16%;
+    --sidebar-ring: 210 100% 55%;
+    --success: 150 70% 45%;
     --warning: 45 90% 55%;
   }
 }
@@ -66,14 +66,14 @@ body {
   width: 4px;
 }
 ::-webkit-scrollbar-track {
-  background: hsl(150 18% 8%);
+  background: hsl(220 22% 8%);
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(145 70% 45% / 0.3);
+  background: hsl(210 100% 55% / 0.3);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(145 70% 45% / 0.5);
+  background: hsl(210 100% 55% / 0.5);
 }
 
 /* Pulse animation for VPN connection */
@@ -86,10 +86,10 @@ body {
 }
 
 @keyframes glow {
-  0%, 100% { box-shadow: 0 0 20px hsl(145 70% 45% / 0.15); }
-  50% { box-shadow: 0 0 40px hsl(145 70% 45% / 0.3); }
+  0%, 100% { box-shadow: 0 0 20px hsl(210 100% 55% / 0.15); }
+  50% { box-shadow: 0 0 40px hsl(210 100% 55% / 0.3); }
 }
-.glow-green {
+.glow-blue {
   animation: glow 3s ease-in-out infinite;
 }
 
@@ -97,10 +97,10 @@ body {
 .sub-card {
   background: linear-gradient(
     135deg,
-    hsl(145 70% 45% / 0.4) 0%,
-    hsl(160 60% 35% / 0.2) 30%,
-    hsl(150 20% 12% / 0.6) 60%,
-    hsl(145 70% 45% / 0.3) 100%
+    hsl(210 100% 55% / 0.4) 0%,
+    hsl(200 80% 45% / 0.2) 30%,
+    hsl(220 20% 12% / 0.6) 60%,
+    hsl(210 100% 55% / 0.3) 100%
   );
   background-size: 200% 200%;
   animation: card-border-shift 6s ease-in-out infinite;
@@ -109,9 +109,9 @@ body {
 .sub-card-inner {
   background: linear-gradient(
     160deg,
-    hsl(150 20% 10%) 0%,
-    hsl(150 18% 7%) 40%,
-    hsl(155 22% 9%) 100%
+    hsl(220 22% 10%) 0%,
+    hsl(220 20% 7%) 40%,
+    hsl(215 24% 9%) 100%
   );
 }
 
@@ -128,9 +128,9 @@ body {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    hsl(145 70% 60% / 0.3) 45%,
-    hsl(170 80% 70% / 0.2) 50%,
-    hsl(145 70% 60% / 0.3) 55%,
+    hsl(210 100% 65% / 0.3) 45%,
+    hsl(190 90% 70% / 0.2) 50%,
+    hsl(210 100% 65% / 0.3) 55%,
     transparent 100%
   );
   animation: shimmer 4s ease-in-out infinite;

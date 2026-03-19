@@ -76,7 +76,7 @@ export const PLANS: Plan[] = [
 export const MOCK_USER: User = {
   id: '1',
   telegramId: '123456789',
-  username: 'sentinel_user',
+  username: 'privat_user',
   displayName: 'Alex K.',
   role: 'owner',
   createdAt: '2025-01-15',
@@ -93,9 +93,9 @@ export const MOCK_USER: User = {
 export const MOCK_VPN_KEYS: VpnKey[] = [
   {
     id: 'key-1',
-    key: 'vless://user1@nl1.sentinel-vpn.io:443?type=ws&security=tls',
+    key: 'vless://user1@nl1.privat-vpn.io:443?type=ws&security=tls',
     userId: '1',
-    username: 'sentinel_user',
+    username: 'privat_user',
     planName: 'Guardian',
     createdAt: '2025-12-01',
     expiresAt: '2026-03-15',
@@ -103,7 +103,7 @@ export const MOCK_VPN_KEYS: VpnKey[] = [
   },
   {
     id: 'key-2',
-    key: 'vless://user2@de1.sentinel-vpn.io:443?type=ws&security=tls',
+    key: 'vless://user2@de1.privat-vpn.io:443?type=ws&security=tls',
     userId: '2',
     username: 'cyber_fox',
     planName: 'Fortress',
@@ -113,7 +113,7 @@ export const MOCK_VPN_KEYS: VpnKey[] = [
   },
   {
     id: 'key-3',
-    key: 'vless://user3@fi1.sentinel-vpn.io:443?type=ws&security=tls',
+    key: 'vless://user3@fi1.privat-vpn.io:443?type=ws&security=tls',
     userId: '3',
     username: 'shadow_net',
     planName: 'Scout',
@@ -235,7 +235,7 @@ export const BOT_MESSAGES: BotMessage[] = [
     id: 'msg-start',
     name: 'Приветствие',
     trigger: '/start',
-    text: `<b>Sentinel VPN</b> -- твой щит в сети
+    text: `<b>PrivatVPN</b> -- твоя приватность в сети
 
 Безопасный, быстрый и анонимный VPN прямо в Telegram.
 
@@ -289,7 +289,7 @@ export const BOT_MESSAGES: BotMessage[] = [
     trigger: 'key_expired',
     text: `<b>Ваша подписка истекла</b>
 
-Ваш VPN ключ больше не активен. Чтобы продолжить пользоваться Sentinel VPN, выберите тариф и оплатите подписку.
+Ваш VPN ключ больше не активен. Чтобы продолжить пользоваться PrivatVPN, выберите тариф и оплатите подписку.
 
 Тарифы от <b>50 руб/мес</b> -- откройте приложение, чтобы посмотреть все планы.`,
     parseMode: 'HTML',
@@ -300,7 +300,7 @@ export const BOT_MESSAGES: BotMessage[] = [
     trigger: 'referral_reward',
     text: `<b>+{reward} руб на баланс!</b>
 
-Ваш друг <b>@{friend_username}</b> подключил Sentinel VPN по вашей ссылке. Бонус начислен на ваш баланс.
+Ваш друг <b>@{friend_username}</b> подключил PrivatVPN по вашей ссылке. Бонус начислен на ваш баланс.
 
 Приглашайте друзей -- получайте <b>30 руб</b> за каждого!
 

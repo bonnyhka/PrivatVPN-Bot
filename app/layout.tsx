@@ -6,12 +6,12 @@ const _inter = Inter({ subsets: ['latin', 'cyrillic'], variable: '--font-inter' 
 const _jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains' })
 
 export const metadata: Metadata = {
-  title: 'Sentinel VPN - Telegram Mini App',
+  title: 'PrivatVPN - Telegram Mini App',
   description: 'Быстрый и безопасный VPN сервис через Telegram',
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0a1a10',
+  themeColor: '#0a0f1a',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,

@@ -131,7 +131,7 @@ export function AdminView({ onNavigate }: AdminViewProps) {
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">Админ панель</h1>
-            <p className="text-xs text-muted-foreground">Sentinel VPN</p>
+            <p className="text-xs text-muted-foreground">PrivatVPN</p>
           </div>
         </div>
         <button

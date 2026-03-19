@@ -17,7 +17,7 @@ export function ReferralView({ user, onNavigate }: ReferralViewProps) {
   const referrals = MOCK_REFERRALS.filter(r => r.fromUserId === user.id)
   const totalEarned = referrals.filter(r => r.status === 'credited').reduce((sum, r) => sum + r.reward, 0)
   const pendingEarned = referrals.filter(r => r.status === 'pending').reduce((sum, r) => sum + r.reward, 0)
-  const refLink = `https://t.me/SentinelVPN_bot?start=ref_${user.id}`
+  const refLink = `https://t.me/PrivatVPN_bot?start=ref_${user.id}`
 
   const handleCopy = () => {
     navigator.clipboard.writeText(refLink)

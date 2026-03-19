@@ -47,7 +47,7 @@ export function PaymentView({ plan, onNavigate }: PaymentViewProps) {
   }
 
   const handleCopyKey = () => {
-    navigator.clipboard.writeText('vless://demo-key@sentinel-vpn.io:443?type=ws&security=tls')
+    navigator.clipboard.writeText('vless://demo-key@privat-vpn.io:443?type=ws&security=tls')
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -67,7 +67,7 @@ export function PaymentView({ plan, onNavigate }: PaymentViewProps) {
   if (step === 'success') {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4 pb-24">
-        <div className="flex h-24 w-24 items-center justify-center rounded-full border border-primary/20 bg-primary/10 glow-green">
+        <div className="flex h-24 w-24 items-center justify-center rounded-full border border-primary/20 bg-primary/10 glow-blue">
           <CheckCircle2 className="h-12 w-12 text-primary" />
         </div>
         <p className="mt-6 text-lg font-bold text-foreground">Оплата прошла успешно!</p>
@@ -79,7 +79,7 @@ export function PaymentView({ plan, onNavigate }: PaymentViewProps) {
           <p className="mb-2 text-xs text-muted-foreground">Ваш VPN ключ:</p>
           <div className="flex items-center gap-2 rounded-lg bg-secondary p-3">
             <code className="flex-1 truncate font-mono text-xs text-primary">
-              vless://demo-key@sentinel-vpn.io:443
+              vless://demo-key@privat-vpn.io:443
             </code>
             <button
               onClick={handleCopyKey}
