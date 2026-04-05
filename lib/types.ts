@@ -7,6 +7,10 @@ export interface User {
   displayName: string
   role: UserRole
   avatar?: string
+  balance: number
+  referralCode: string
+  referralsCount: number
+  referrals?: Referral[]
   createdAt: string
   subscription?: Subscription
 }
@@ -16,8 +20,11 @@ export interface Subscription {
   planId: string
   status: 'active' | 'expired' | 'cancelled'
   expiresAt: string
-  vpnKey?: string
+  subscriptionUrl?: string
+  vlessUuid?: string
+  trafficUsed?: string
   autoRenew: boolean
+  tgProxyUrl?: string
 }
 
 export interface Plan {
@@ -32,6 +39,7 @@ export interface Plan {
   discount?: number
   devicesCount: number
   speedLabel: string
+  trafficLimit: number // in bytes
 }
 
 export interface VpnKey {
@@ -58,8 +66,9 @@ export interface SupportTicket {
 export interface Referral {
   id: string
   fromUserId: string
-  toUserId: string
   toUsername: string
+  toDisplayName: string
+  toAvatar?: string | null
   reward: number
   status: 'pending' | 'credited'
   createdAt: string
@@ -76,8 +85,12 @@ export interface BotMessage {
 export interface Discount {
   id: string
   code: string
+  mode: 'promo' | 'global' | 'compensation'
+  delivery: 'code' | 'auto' | 'broadcast'
+  audience: 'all' | 'active' | 'expired' | 'paid' | 'custom'
   type: 'percent' | 'fixed'
   value: number
+  compensationDays?: number
   minPurchase?: number
   maxUses?: number
   usedCount: number
@@ -86,6 +99,10 @@ export interface Discount {
   applicablePlans: string[] | 'all'
   isActive: boolean
   description?: string
+  targetUsers?: string
+  broadcastText?: string
+  lastBroadcastAt?: string | null
+  lastAppliedAt?: string | null
 }
 
 export type AppView =
@@ -103,3 +120,11 @@ export type AppView =
   | 'admin-messages'
   | 'admin-discounts'
   | 'admin-pricing'
+  | 'admin-routers'
+  | 'admin-orders'
+  | 'admin-security'
+  | 'admin-info'
+  | 'admin-locations'
+  | 'market'
+  | 'documents'
+  | 'connect'

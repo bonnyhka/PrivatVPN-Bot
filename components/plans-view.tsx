@@ -1,58 +1,85 @@
 'use client'
 
-import { Check, Sparkles, Zap, Shield, Gem, ArrowRight, Users, Globe, Rocket } from 'lucide-react'
-import { PLANS } from '@/lib/store'
-import type { Plan, AppView } from '@/lib/types'
+import { Check, Sparkles, Zap, Shield, Gem, ArrowRight, Users, Rocket, Database, Gift, Compass, ShieldCheck, Vault, Crown } from 'lucide-react'
+import { useState } from 'react'
+import type { AppView, Plan, User } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { AnimatedContainer, AnimatedItem } from '@/components/ui/animated-view'
 
 interface PlansViewProps {
+  user: User
+  plans: Plan[]
   onNavigate: (view: AppView) => void
   onSelectPlan: (plan: Plan) => void
+  setIsGift: (isGift: boolean) => void
 }
 
-const PLAN_THEMES: Record<string, { icon: typeof Sparkles; gradient: string; accent: string; glow: string }> = {
+const PLAN_THEMES: Record<string, { 
+  icon: typeof Sparkles, 
+  gradient: string, 
+  accent: string, 
+  glow: string,
+  border: string,
+  bg: string
+}> = {
   scout: {
-    icon: Sparkles,
+    icon: Compass,
     gradient: 'from-slate-500/20 to-slate-600/10',
     accent: 'text-slate-400',
-    glow: '',
+    glow: 'shadow-[0_0_20px_rgba(148,163,184,0.1)]',
+    border: 'border-slate-500/30',
+    bg: 'bg-slate-500/5'
   },
   guardian: {
-    icon: Shield,
-    gradient: 'from-primary/30 to-cyan-500/20',
-    accent: 'text-primary',
-    glow: 'shadow-[0_0_40px_hsl(210_100%_55%/0.2)]',
+    icon: ShieldCheck,
+    gradient: 'from-cyan-500/30 to-blue-600/20',
+    accent: 'text-cyan-400',
+    glow: 'shadow-[0_0_30px_rgba(6,182,212,0.2)]',
+    border: 'border-cyan-500/40',
+    bg: 'bg-cyan-500/5'
   },
   fortress: {
-    icon: Zap,
-    gradient: 'from-violet-500/25 to-purple-600/15',
+    icon: Vault,
+    gradient: 'from-violet-500/30 to-purple-600/20',
     accent: 'text-violet-400',
-    glow: '',
+    glow: 'shadow-[0_0_40px_rgba(139,92,246,0.25)]',
+    border: 'border-violet-500/50',
+    bg: 'bg-violet-500/5'
   },
   citadel: {
-    icon: Gem,
-    gradient: 'from-amber-500/25 to-orange-500/15',
+    icon: Crown,
+    gradient: 'from-amber-500/30 to-orange-500/20',
     accent: 'text-amber-400',
-    glow: 'shadow-[0_0_30px_hsl(45_90%_55%/0.12)]',
+    glow: 'shadow-[0_0_50px_rgba(245,158,11,0.3)]',
+    border: 'border-amber-500/60',
+    bg: 'bg-amber-500/5'
   },
 }
 
-export function PlansView({ onNavigate, onSelectPlan }: PlansViewProps) {
+export function PlansView({ user, plans, onNavigate, onSelectPlan, setIsGift }: PlansViewProps) {
+  const [localIsGift, setLocalIsGift] = useState(false)
+
+  const handleToggleGift = (val: boolean) => {
+    setLocalIsGift(val)
+    setIsGift(val)
+  }
+
   return (
-    <div className="min-h-screen px-4 pb-24 pt-6">
+    <AnimatedContainer className="min-h-screen px-4 pb-24 pt-6">
       {/* Header */}
-      <div className="mb-6 text-center">
+      <AnimatedItem className="mb-6 text-center">
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15">
           <Rocket className="h-6 w-6 text-primary" />
         </div>
         <h1 className="text-2xl font-bold text-foreground">Выберите тариф</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          Безлимитный VPN от 50 руб/мес
+          2 активные локации: Германия и Нидерланды
         </p>
-      </div>
+      </AnimatedItem>
+
 
       {/* Promo banner */}
-      <div className="mb-5 rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 to-cyan-500/10 p-3.5">
+      <AnimatedItem className="mb-5 rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 to-cyan-500/10 p-3.5">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/20">
             <Users className="h-4 w-4 text-primary" />
@@ -63,11 +90,12 @@ export function PlansView({ onNavigate, onSelectPlan }: PlansViewProps) {
           </div>
           <ArrowRight className="ml-auto h-4 w-4 text-primary" />
         </div>
-      </div>
+      </AnimatedItem>
 
       {/* Plans */}
-      <div className="space-y-4">
-        {PLANS.map((plan) => {
+      <AnimatedItem className="-mx-4 mt-2 overflow-x-auto hide-scrollbar">
+      <div className="flex snap-x snap-mandatory gap-4 px-6 pt-14 pb-12">
+        {plans.map((plan: Plan) => {
           const theme = PLAN_THEMES[plan.id] || PLAN_THEMES.scout
           const Icon = theme.icon
 
@@ -75,53 +103,57 @@ export function PlansView({ onNavigate, onSelectPlan }: PlansViewProps) {
             <div
               key={plan.id}
               className={cn(
-                'relative overflow-hidden rounded-2xl border bg-card transition-all',
-                plan.popular
-                  ? 'border-primary/50 ' + theme.glow
-                  : 'border-border hover:border-primary/30',
-                theme.glow
+                'relative rounded-[2rem] border-2 transition-all duration-300 w-[calc(100%-40px)] shrink-0 snap-center md:w-[300px]',
+                theme.border,
+                theme.glow,
+                theme.bg,
+                plan.popular && 'scale-[1.02] z-10'
               )}
             >
-              {/* Gradient header */}
-              <div className={cn('relative h-20 bg-gradient-to-br', theme.gradient)}>
-                {/* Pattern overlay */}
-                <div 
-                  className="absolute inset-0 opacity-30"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                  }}
-                />
-                
-                {/* Icon */}
-                <div className="absolute left-5 top-1/2 -translate-y-1/2">
+              <div className="rounded-[calc(2rem-2px)]">
+                {/* Gradient header */}
+                <div className={cn('relative flex min-h-[5.5rem] items-center justify-between px-5 py-3 bg-gradient-to-br overflow-hidden rounded-[calc(2rem-2px)] rounded-b-none', theme.gradient)}>
+                  {/* Pattern overlay */}
+                  <div
+                    className="absolute inset-0 opacity-30"
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                    }}
+                  />
+
+                  {/* Icon */}
                   <div className={cn(
-                    'flex h-12 w-12 items-center justify-center rounded-xl bg-card/80 backdrop-blur-sm',
+                    'relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-card/80 backdrop-blur-sm',
                     plan.popular && 'ring-2 ring-primary/50'
                   )}>
                     <Icon className={cn('h-6 w-6', theme.accent)} />
                   </div>
+
+                  {/* Plan details (stacked on right) */}
+                  <div className="relative z-10 flex flex-col items-end gap-1 text-right">
+                    {plan.popular && (
+                      <span className="rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary-foreground shadow-sm">
+                        Популярный
+                      </span>
+                    )}
+                    <h3 className="text-xl font-bold text-white drop-shadow-md">{plan.name}</h3>
+                    {plan.badge && (
+                      <span className={cn(
+                        'rounded-full px-2 py-0.5 text-[10px] font-bold leading-none',
+                        plan.popular
+                          ? 'bg-primary/90 text-primary-foreground'
+                          : plan.id === 'citadel'
+                          ? 'bg-amber-500/20 text-amber-400'
+                          : 'bg-violet-500/20 text-violet-400'
+                      )}>
+                        {plan.badge}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                {/* Plan name & badge */}
-                <div className="absolute right-5 top-1/2 -translate-y-1/2 text-right">
-                  <h3 className="text-lg font-bold text-foreground">{plan.name}</h3>
-                  {plan.badge && (
-                    <span className={cn(
-                      'mt-1 inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold',
-                      plan.popular
-                        ? 'bg-primary text-primary-foreground'
-                        : plan.id === 'citadel'
-                        ? 'bg-amber-500/20 text-amber-400'
-                        : 'bg-violet-500/20 text-violet-400'
-                    )}>
-                      {plan.badge}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="p-5">
+                {/* Content */}
+                <div className="p-5">
                 {/* Price */}
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-3xl font-extrabold text-foreground">{plan.price}</span>
@@ -142,9 +174,11 @@ export function PlansView({ onNavigate, onSelectPlan }: PlansViewProps) {
                     <span className="text-xs text-foreground">{plan.speedLabel}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Globe className={cn('h-3.5 w-3.5', theme.accent)} />
+                    <Database className={cn('h-3.5 w-3.5', theme.accent)} />
                     <span className="text-xs text-foreground">
-                      {plan.id === 'scout' ? '5' : plan.id === 'guardian' ? '12' : plan.id === 'fortress' ? '25+' : 'Все'} серверов
+                      {plan.trafficLimit > 1000000000000
+                        ? '∞'
+                        : Math.floor(plan.trafficLimit / (1024 * 1024 * 1024)) + ' ГБ'} Трафик
                     </span>
                   </div>
                 </div>
@@ -168,31 +202,44 @@ export function PlansView({ onNavigate, onSelectPlan }: PlansViewProps) {
                 </ul>
 
                 {/* CTA */}
-                <button
-                  onClick={() => {
-                    onSelectPlan(plan)
-                    onNavigate('payment')
-                  }}
-                  className={cn(
-                    'group mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold transition-all',
-                    plan.popular
-                      ? 'bg-primary text-primary-foreground hover:brightness-110'
-                      : 'border border-border bg-secondary text-foreground hover:border-primary/40 hover:bg-primary/10'
-                  )}
-                >
-                  Подключить
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                </button>
+                  {(() => {
+                    const isActive = user?.subscription?.status === 'active'
+                    const activeIndex = isActive && user.subscription ? plans.findIndex(p => p.id === user.subscription!.planId) : -1
+                    const thisIndex = plans.findIndex(p => p.id === plan.id)
+                    const isDowngrade = isActive && activeIndex !== -1 && thisIndex < activeIndex
+
+                    return (
+                      <button
+                        onClick={() => {
+                          onSelectPlan(plan)
+                          onNavigate('payment')
+                        }}
+                        className={cn(
+                          'group mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold transition-all',
+                          plan.popular
+                            ? 'bg-primary text-primary-foreground hover:brightness-110'
+                            : 'border border-border bg-secondary text-foreground hover:border-primary/40 hover:bg-primary/10'
+                        )}
+                      >
+                        Подключить
+                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                      </button>
+                    )
+                  })()}
+                </div>
               </div>
             </div>
           )
         })}
       </div>
+      </AnimatedItem>
 
       {/* Footer note */}
-      <p className="mt-6 text-center text-[10px] text-muted-foreground">
-        Все тарифы включают: без рекламы, без логов, шифрование AES-256
-      </p>
-    </div>
+      <AnimatedItem>
+        <p className="mt-6 text-center text-[10px] text-muted-foreground">
+          Все тарифы включают: без рекламы, без логов, шифрование AES-256
+        </p>
+      </AnimatedItem>
+    </AnimatedContainer>
   )
 }

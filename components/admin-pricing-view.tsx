@@ -7,10 +7,11 @@ import {
   Plus, Trash2, Package
 } from 'lucide-react'
 import type { AppView, Plan } from '@/lib/types'
-import { PLANS } from '@/lib/store'
 import { cn } from '@/lib/utils'
 
 interface AdminPricingViewProps {
+  plans: Plan[]
+  setPlans: React.Dispatch<React.SetStateAction<Plan[]>>
   onNavigate: (view: AppView) => void
 }
 
@@ -20,9 +21,9 @@ interface EditablePlan extends Plan {
   newFeatures: string[]
 }
 
-export function AdminPricingView({ onNavigate }: AdminPricingViewProps) {
+export function AdminPricingView({ plans: initialPlans, setPlans: setGlobalPlans, onNavigate }: AdminPricingViewProps) {
   const [plans, setPlans] = useState<EditablePlan[]>(
-    PLANS.map(p => ({ ...p, isEditing: false, newPrice: p.price, newFeatures: [...p.features] }))
+    initialPlans.map(p => ({ ...p, isEditing: false, newPrice: p.price, newFeatures: [...p.features] }))
   )
   const [hasChanges, setHasChanges] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -87,20 +88,29 @@ export function AdminPricingView({ onNavigate }: AdminPricingViewProps) {
   }
 
   function handleReset() {
-    setPlans(PLANS.map(p => ({ ...p, isEditing: false, newPrice: p.price, newFeatures: [...p.features] })))
+    setPlans(initialPlans.map(p => ({ ...p, isEditing: false, newPrice: p.price, newFeatures: [...p.features] })))
     setHasChanges(false)
     setSaved(false)
   }
 
-  function handleSave() {
+  async function handleSave() {
     setSaving(true)
-    // Simulate API call
-    setTimeout(() => {
-      setSaving(false)
-      setSaved(true)
-      setHasChanges(false)
-      setPlans(prev => prev.map(p => ({ ...p, isEditing: false })))
-    }, 1500)
+    for (const p of plans) {
+      if (p.newPrice !== p.price || JSON.stringify(p.newFeatures) !== JSON.stringify(p.features)) {
+        await fetch('/api/admin/pricing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: p.id, price: p.newPrice, features: p.newFeatures, trafficLimit: p.trafficLimit ? Number(p.trafficLimit) : Number.MAX_SAFE_INTEGER })
+        })
+      }
+    }
+    const res = await fetch('/api/plans')
+    const updatedPlans = await res.json()
+    setGlobalPlans(updatedPlans)
+    setPlans(updatedPlans.map((p: Plan) => ({ ...p, isEditing: false, newPrice: p.price, newFeatures: [...p.features] })))
+    setSaving(false)
+    setSaved(true)
+    setHasChanges(false)
   }
 
   // Calculate price change statistics

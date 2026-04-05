@@ -1,6 +1,6 @@
 'use client'
 
-import { Shield, CreditCard, Key, Gift, Headphones, Settings } from 'lucide-react'
+import { Shield, CreditCard, Key, Gift, Headphones, Settings, ShoppingBag } from 'lucide-react'
 import type { AppView, UserRole } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -10,7 +10,7 @@ interface BottomNavProps {
   userRole: UserRole
 }
 
-const NAV_ITEMS: { view: AppView; label: string; icon: typeof Shield }[] = [
+const BASE_ITEMS: { view: AppView; label: string; icon: typeof Shield }[] = [
   { view: 'home', label: 'VPN', icon: Shield },
   { view: 'plans', label: 'Тарифы', icon: CreditCard },
   { view: 'my-vpn', label: 'Мой VPN', icon: Key },
@@ -18,39 +18,60 @@ const NAV_ITEMS: { view: AppView; label: string; icon: typeof Shield }[] = [
 ]
 
 export function BottomNav({ currentView, onNavigate, userRole }: BottomNavProps) {
-  const items = userRole === 'admin' || userRole === 'owner'
-    ? [...NAV_ITEMS, { view: 'admin' as AppView, label: 'Админ', icon: Settings }]
-    : userRole === 'support'
-    ? [...NAV_ITEMS, { view: 'admin-support' as AppView, label: 'Тикеты', icon: Headphones }]
-    : NAV_ITEMS
+  const showMarket = userRole === 'admin' || userRole === 'owner'
+
+  let mainItems = [...BASE_ITEMS]
+  if (userRole === 'admin' || userRole === 'owner') {
+    mainItems.push({ view: 'admin' as AppView, label: 'Админ', icon: Settings })
+  } else if (userRole === 'support') {
+    mainItems.push({ view: 'admin-support' as AppView, label: 'Тикеты', icon: Headphones })
+  }
+
+  // Скрываем только полноэкранные разделы; подстраницы админки (admin-security и т.д.) оставляем с «Админ» в таббаре
+  const isHidden =
+    currentView === 'market' ||
+    currentView === 'admin-orders' ||
+    currentView === 'admin-support'
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-md items-center justify-around px-1 py-2">
-        {items.map((item) => {
+    <div className={cn(
+      "fixed left-4 right-4 z-[70] pointer-events-none flex justify-center gap-2 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]",
+      isHidden ? "bottom-[-100px] opacity-0 scale-95" : "bottom-4 opacity-100 scale-100"
+    )}>
+      <nav className="pointer-events-auto w-full max-w-[320px] rounded-[2rem] border border-white/10 bg-[#121212]/90 shadow-[0_20px_60px_rgba(0,0,0,0.8)] backdrop-blur-3xl p-1.5 flex items-center justify-around">
+        {mainItems.map((item) => {
           const Icon = item.icon
-          const isActive = currentView === item.view ||
-            (item.view === 'admin' && currentView.startsWith('admin'))
+          const isActive = currentView === item.view || (item.view === 'admin' && currentView.startsWith('admin'))
           return (
-            <button
+              <button
               key={item.view}
               onClick={() => onNavigate(item.view)}
               className={cn(
-                'flex flex-col items-center gap-0.5 rounded-xl px-2.5 py-1.5 text-[10px] transition-all',
-                isActive
-                  ? 'text-primary'
-                  : 'text-muted-foreground hover:text-foreground'
+                'flex flex-col items-center justify-center gap-1 rounded-[1.5rem] w-[54px] h-[54px] text-[10px] transition-all duration-300',
+                isActive ? 'text-primary bg-primary/10 shadow-inner' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
               )}
             >
-              <Icon className={cn('h-5 w-5', isActive && 'drop-shadow-[0_0_6px_hsl(145,70%,45%)]')} />
-              <span className="font-medium">{item.label}</span>
-              {isActive && (
-                <span className="mt-0.5 h-0.5 w-4 rounded-full bg-primary" />
-              )}
+              <Icon className={cn('h-5 w-5 transition-transform', isActive && 'scale-110')} />
+              <span className="font-medium tracking-tight leading-none">{item.label}</span>
             </button>
           )
         })}
-      </div>
-    </nav>
+      </nav>
+
+      {showMarket && (
+        <button
+          onClick={() => onNavigate('market')}
+          className={cn(
+            "pointer-events-auto h-[66px] aspect-square rounded-[2rem] border flex flex-col items-center justify-center gap-1 text-[9px] uppercase font-black transition-all duration-300 shadow-[0_20px_60px_rgba(0,0,0,0.5)] backdrop-blur-3xl shrink-0 tracking-widest leading-none",
+            currentView === 'market' 
+              ? "bg-primary text-primary-foreground border-primary shadow-lg scale-105" 
+              : "bg-primary/20 text-primary border-primary/30 hover:bg-primary/30 hover:scale-105"
+          )}
+        >
+          <ShoppingBag className="h-6 w-6 mb-0.5" />
+          <span>MARKET</span>
+        </button>
+      )}
+    </div>
   )
 }

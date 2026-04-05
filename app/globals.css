@@ -14,6 +14,9 @@ body {
 
 @layer base {
   :root {
+    --tg-shell-color: #132430;
+    --tg-app-background: #0b1218;
+    --tg-bottom-bar-color: #101820;
     --background: 220 25% 5%;
     --foreground: 210 20% 92%;
     --card: 220 22% 8%;
@@ -58,8 +61,31 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    background:
+      radial-gradient(circle at top center, rgba(18, 37, 49, 0.18), transparent 24%),
+      linear-gradient(180deg, var(--tg-app-background) 0%, var(--tg-app-background) 18%, hsl(var(--background)) 34%);
+    background-attachment: fixed;
   }
 }
+
+/* Desktop admin: embed mobile-first admin views without "full screen" padding */
+.desktop-admin-embed .min-h-screen {
+  min-height: auto !important;
+}
+.desktop-admin-embed .pb-24 {
+  padding-bottom: 1.25rem !important;
+}
+.desktop-admin-embed .pt-6 {
+  padding-top: 0.75rem !important;
+}
+.desktop-admin-embed .px-4 {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+.desktop-admin-embed .bg-background {
+  background: transparent !important;
+}
+
 
 /* Custom scrollbar for the app */
 ::-webkit-scrollbar {

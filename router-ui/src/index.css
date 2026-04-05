@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+@theme {
+  --color-border: hsl(220 15% 16%);
+  --color-input: hsl(220 15% 16%);
+  --color-background: hsl(220 25% 5%);
+  --color-foreground: hsl(210 20% 92%);
+  --color-primary: hsl(210 100% 55%);
+  --color-primary-foreground: hsl(220 25% 5%);
+  --color-card: hsl(220 22% 8%);
+  --color-card-foreground: hsl(210 20% 92%);
+  --color-success: hsl(150 70% 45%);
+  --color-warning: hsl(45 90% 55%);
+  --color-destructive: hsl(0 62% 50%);
+  --color-destructive-foreground: hsl(0 0% 98%);
+  --color-muted: hsl(220 15% 12%);
+  --color-muted-foreground: hsl(210 12% 55%);
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    @apply font-sans antialiased overflow-hidden m-0 p-0;
+  }
+}
+
+@layer utilities {
+  .glow-blue {
+    text-shadow: 0 0 10px var(--color-primary);
+  }
+  .glow-text {
+    text-shadow: 0 0 8px var(--color-primary);
+  }
+}
+
+/* Custom scrollbar to match clean aesthetic */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(220 22% 8%);
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(210 100% 55% / 0.3);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(210 100% 55% / 0.5);
+}

@@ -2,133 +2,127 @@
 
 import { useState, useEffect } from 'react'
 import {
-  Users, Key, Headphones, ShieldCheck, Activity, TrendingUp,
-  UserPlus, BarChart3, MessageSquare, Gift, Server, Wifi,
-  ArrowUp, ArrowDown, Gauge, Clock, Zap, Globe, AlertTriangle,
-  CheckCircle2, XCircle, RefreshCw, Tag, DollarSign
+  Users, Key, Headphones, Activity,
+  UserPlus, BarChart3, Tag, DollarSign, Server, Globe,
+  CheckCircle2, RefreshCw, Package, Sparkles, Shield
 } from 'lucide-react'
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import type { AppView } from '@/lib/types'
-import { MOCK_USERS, MOCK_VPN_KEYS, MOCK_TICKETS, MOCK_REFERRALS, LOCATIONS, MOCK_DISCOUNTS } from '@/lib/store'
 import { cn } from '@/lib/utils'
+import { format } from 'date-fns'
+import { ru } from 'date-fns/locale'
+import { AnimatedContainer, AnimatedItem } from '@/components/ui/animated-view'
 
 interface AdminViewProps {
   onNavigate: (view: AppView) => void
 }
 
-interface ServerStatus {
-  country: string
-  flag: string
-  ping: number
-  load: number
-  upload: number
-  download: number
-  status: 'online' | 'warning' | 'offline'
-  users: number
-  uptime: string
-}
-
 export function AdminView({ onNavigate }: AdminViewProps) {
   const [refreshing, setRefreshing] = useState(false)
-  const [serverStatuses, setServerStatuses] = useState<ServerStatus[]>(() =>
-    LOCATIONS.map((loc) => ({
-      ...loc,
-      upload: Math.floor(Math.random() * 400 + 100),
-      download: Math.floor(Math.random() * 800 + 200),
-      status: loc.load > 60 ? 'warning' as const : 'online' as const,
-      users: Math.floor(Math.random() * 150 + 10),
-      uptime: `${Math.floor(Math.random() * 30 + 1)}д ${Math.floor(Math.random() * 24)}ч`,
-    }))
-  )
-
-  const [liveMetrics, setLiveMetrics] = useState({
-    avgPing: 0,
-    totalBandwidth: 0,
-    activeConnections: 0,
-    totalUpload: 0,
-    totalDownload: 0,
+  const [stats, setStats] = useState<any>({ 
+    totalUsers: 0, 
+    activeKeys: 0, 
+    openTickets: 0,
+    monthlyRevenue: 0,
+    monthlyTraffic: 0,
+    newUsers30d: 0 
   })
+  const [locations, setLocations] = useState<any[]>([])
+  const [chartsData, setChartsData] = useState({ revenue: [], users: [] })
+  const [analytics, setAnalytics] = useState<any>(null)
+  const [settings, setSettings] = useState<{ globalNotification?: string }>({ globalNotification: '' })
+  const [savingSettings, setSavingSettings] = useState(false)
 
-  useEffect(() => {
-    function recalc() {
-      const onlineServers = serverStatuses.filter(s => s.status !== 'offline')
-      setLiveMetrics({
-        avgPing: Math.round(onlineServers.reduce((a, s) => a + s.ping, 0) / onlineServers.length),
-        totalBandwidth: onlineServers.reduce((a, s) => a + s.download, 0),
-        activeConnections: onlineServers.reduce((a, s) => a + s.users, 0),
-        totalUpload: onlineServers.reduce((a, s) => a + s.upload, 0),
-        totalDownload: onlineServers.reduce((a, s) => a + s.download, 0),
+  function loadData() {
+    fetch('/api/admin/stats').then(r => r.json()).then(d => {
+      if (!d.error) setStats(d)
+    }).catch(console.error)
+
+    fetch('/api/locations').then(r => r.json()).then(d => {
+      if (Array.isArray(d)) setLocations(d)
+    }).catch(console.error)
+
+    fetch('/api/admin/charts').then(r => r.json()).then(d => {
+      if (!d.error) setChartsData(d)
+    }).catch(console.error)
+
+    fetch('/api/admin/analytics').then(r => r.json()).then(d => {
+      if (!d.error) setAnalytics(d)
+    }).catch(console.error)
+
+    fetch('/api/admin/settings').then(r => r.json()).then(d => {
+      if (!d.error) setSettings(d)
+    }).catch(console.error)
+  }
+
+  async function handleSaveSettings() {
+    setSavingSettings(true)
+    try {
+      await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
       })
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setSavingSettings(false)
     }
-    recalc()
-  }, [serverStatuses])
+  }
 
-  // Simulate live updates
   useEffect(() => {
-    const interval = setInterval(() => {
-      setServerStatuses(prev => prev.map(s => ({
-        ...s,
-        ping: Math.max(5, s.ping + Math.floor(Math.random() * 7 - 3)),
-        load: Math.min(99, Math.max(5, s.load + Math.floor(Math.random() * 9 - 4))),
-        upload: Math.max(50, s.upload + Math.floor(Math.random() * 41 - 20)),
-        download: Math.max(100, s.download + Math.floor(Math.random() * 61 - 30)),
-        users: Math.max(1, s.users + Math.floor(Math.random() * 5 - 2)),
-        status: s.load > 80 ? 'warning' as const : 'online' as const,
-      })))
-    }, 3000)
+    loadData()
+    const interval = setInterval(loadData, 5 * 60 * 1000)
     return () => clearInterval(interval)
   }, [])
 
   function handleRefresh() {
     setRefreshing(true)
-    setTimeout(() => {
-      setServerStatuses(prev => prev.map(s => ({
-        ...s,
-        ping: Math.floor(Math.random() * 150 + 10),
-        load: Math.floor(Math.random() * 70 + 10),
-        upload: Math.floor(Math.random() * 400 + 100),
-        download: Math.floor(Math.random() * 800 + 200),
-        users: Math.floor(Math.random() * 150 + 10),
-      })))
-      setRefreshing(false)
-    }, 1200)
+    loadData()
+    setTimeout(() => setRefreshing(false), 800)
   }
 
-  const FLAG_EMOJIS: Record<string, string> = {
-    NL: '\uD83C\uDDF3\uD83C\uDDF1',
-    DE: '\uD83C\uDDE9\uD83C\uDDEA',
-    FI: '\uD83C\uDDEB\uD83C\uDDEE',
-    US: '\uD83C\uDDFA\uD83C\uDDF8',
-    JP: '\uD83C\uDDEF\uD83C\uDDF5',
-    SG: '\uD83C\uDDF8\uD83C\uDDEC',
+  const formatTraffic = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B'
+    if (bytes < 1024**2) return (bytes / 1024).toFixed(2) + ' KB'
+    if (bytes < 1024**3) return (bytes / 1024**2).toFixed(2) + ' MB'
+    if (bytes < 1024**4) return (bytes / 1024**3).toFixed(3) + ' GB'
+    return (bytes / 1024**4).toFixed(3) + ' TB'
   }
 
-  const stats = [
-    { label: 'Пользователи', value: MOCK_USERS.length, change: '+12%', icon: Users },
-    { label: 'Активные ключи', value: MOCK_VPN_KEYS.filter(k => k.status === 'active').length, change: '+8%', icon: Key },
-    { label: 'Тикеты', value: MOCK_TICKETS.filter(t => t.status !== 'resolved').length, change: '-3', icon: Headphones },
-    { label: 'Доход/мес', value: '4.2K', change: '+23%', icon: TrendingUp },
+  const formatTrafficCheckedAt = (value?: string | null) => {
+    if (!value) return undefined
+    const timestamp = new Date(value)
+    if (!Number.isFinite(timestamp.getTime())) return undefined
+    return `обновлено в ${format(timestamp, 'HH:mm', { locale: ru })}`
+  }
+
+  const statCards = [
+    { label: 'Оборот (30д)', value: stats.monthlyRevenue ? stats.monthlyRevenue.toLocaleString() + ' ₽' : '0 ₽', icon: DollarSign },
+    { label: 'Всего трафика', value: formatTraffic(analytics?.totalTraffic || 0), icon: Globe, subValue: formatTrafficCheckedAt(analytics?.trafficCheckedAt) },
+    { label: 'Юзеры', value: stats.totalUsers || 0, icon: Users },
+    { label: 'Тикеты', value: stats.openTickets || 0, icon: Headphones },
   ]
-
-  const activeDiscountsCount = MOCK_DISCOUNTS.filter(d => d.isActive).length
 
   const adminSections: { view: AppView; label: string; description: string; icon: typeof Users; count?: number }[] = [
-    { view: 'admin-users', label: 'Пользователи', description: 'Управление ролями и аккаунтами', icon: Users, count: MOCK_USERS.length },
-    { view: 'admin-keys', label: 'VPN ключи', description: 'Выдача и управление ключами', icon: Key, count: MOCK_VPN_KEYS.length },
+    { view: 'admin-info', label: 'Диагностика сети', description: 'iperf, MTR, потери, входы и health узлов', icon: Activity, count: locations.length },
+    { view: 'admin-locations', label: 'Управление серверами', description: 'Добавление и развертывание узлов', icon: Globe, count: locations.length },
+    { view: 'admin-users', label: 'Пользователи', description: 'Управление ролями и аккаунтами', icon: Users, count: stats.totalUsers },
+    { view: 'admin-keys', label: 'VPN ключи', description: 'Выдача и управление ключами', icon: Key, count: stats.activeKeys },
     { view: 'admin-pricing', label: 'Тарифы и цены', description: 'Управление ценами и функциями', icon: DollarSign, count: 4 },
-    { view: 'admin-discounts', label: 'Скидки', description: 'Промокоды и акции', icon: Tag, count: activeDiscountsCount },
-    { view: 'admin-support', label: 'Поддержка', description: 'Тикеты и назначение агентов', icon: Headphones, count: MOCK_TICKETS.filter(t => t.status !== 'resolved').length },
-    { view: 'admin-admins', label: 'Команда', description: 'Выдача ролей и управление', icon: ShieldCheck, count: MOCK_USERS.filter(u => u.role !== 'user').length },
-    { view: 'admin-messages', label: 'Сообщения бота', description: 'Тексты и шаблоны уведомлений', icon: MessageSquare, count: 7 },
+    { view: 'admin-security', label: 'Безопасность', description: 'Логи, лимиты и события безопасности', icon: Shield },
+    { view: 'admin-discounts', label: 'Скидки', description: 'Промокоды и акции', icon: Tag },
+    { view: 'admin-routers', label: 'VPN Роутеры', description: 'Подготовка и прошивка устройств', icon: Server },
+    { view: 'admin-orders', label: 'Заказы роутеров', description: 'Управление продажами и доставкой', icon: Package },
+    { view: 'admin-support', label: 'Поддержка', description: 'Тикеты и назначение агентов', icon: Headphones, count: stats.openTickets },
   ]
 
-  const onlineCount = serverStatuses.filter(s => s.status === 'online').length
-  const warningCount = serverStatuses.filter(s => s.status === 'warning').length
-  const offlineCount = serverStatuses.filter(s => s.status === 'offline').length
+  // Removed old chart section
 
   return (
-    <div className="min-h-screen px-4 pb-24 pt-6">
+    <AnimatedContainer className="min-h-screen px-4 pb-24 pt-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <AnimatedItem className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15">
             <Activity className="h-5 w-5 text-primary" />
@@ -144,174 +138,166 @@ export function AdminView({ onNavigate }: AdminViewProps) {
         >
           <RefreshCw className={cn('h-4 w-4 text-muted-foreground', refreshing && 'animate-spin text-primary')} />
         </button>
-      </div>
+      </AnimatedItem>
 
       {/* Stats grid */}
-      <div className="mt-6 grid grid-cols-2 gap-3">
-        {stats.map((stat) => {
+      <AnimatedItem className="mt-6 grid grid-cols-2 gap-3">
+        {statCards.map((stat) => {
           const Icon = stat.icon
           return (
             <div key={stat.label} className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center justify-between">
                 <Icon className="h-4 w-4 text-muted-foreground" />
-                <span className={cn(
-                  'text-[10px] font-semibold',
-                  stat.change.startsWith('+') ? 'text-primary' : 'text-orange-400'
-                )}>
-                  {stat.change}
-                </span>
               </div>
               <p className="mt-2 text-2xl font-extrabold text-foreground">{stat.value}</p>
-              <p className="text-[10px] text-muted-foreground">{stat.label}</p>
+              <p className="text-[10px] text-muted-foreground">
+                {stat.label}
+                {stat.subValue && <span className="ml-1 text-primary/70">• {stat.subValue}</span>}
+              </p>
             </div>
           )
         })}
-      </div>
+      </AnimatedItem>
 
-      {/* System Status */}
-      <div className="mt-6">
-        <div className="flex items-center justify-between">
+      {/* Settings */}
+      <AnimatedItem className="mt-6 overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card p-1">
+        <div className="rounded-xl border border-white/5 bg-card/50 p-4 backdrop-blur-xl">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/20 ring-1 ring-primary/30">
+                <Sparkles className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-foreground">Push-Уведомление (hApp)</h2>
+                <p className="mt-0.5 text-[10px] text-muted-foreground">Эксклюзивный нативный popup-alert для пользователей hApp</p>
+              </div>
+            </div>
+            <div className={cn(
+              "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold",
+              settings.globalNotification ? "bg-green-500/10 text-green-500" : "bg-secondary text-muted-foreground"
+            )}>
+              <span className="relative flex h-2 w-2">
+                {settings.globalNotification && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>}
+                <span className={cn("relative inline-flex h-2 w-2 rounded-full", settings.globalNotification ? "bg-green-500" : "bg-muted-foreground/40")}></span>
+              </span>
+              {settings.globalNotification ? "Активно" : "Выключено"}
+            </div>
+          </div>
+          
+          <div className="flex gap-2 relative">
+            <input
+              type="text"
+              placeholder="Введите текст системного уведомления для hApp..."
+              value={settings.globalNotification || ''}
+              onChange={(e) => setSettings({ ...settings, globalNotification: e.target.value })}
+              className="flex-1 rounded-xl border border-primary/20 bg-background/50 p-3 pl-4 text-xs font-medium text-foreground placeholder-muted-foreground/50 transition-all focus:border-primary/50 focus:bg-background focus:outline-none focus:ring-4 focus:ring-primary/10"
+            />
+            <button
+              disabled={savingSettings}
+              onClick={handleSaveSettings}
+              className="group relative flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] hover:shadow-primary/40 focus:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
+            >
+              {savingSettings ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <Activity className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:rotate-12" />
+                  Применить
+                </>
+              )}
+            </button>
+          </div>
+          <p className="mt-3 flex items-center gap-1.5 text-[9px] text-muted-foreground/70 text-center justify-center">
+            Оставьте поле пустым и нажмите «Применить», чтобы отключить рассылку уведомления.
+          </p>
+        </div>
+      </AnimatedItem>
+
+      {/* Servers section */}
+      <AnimatedItem className="mt-6">
+        <div className="flex items-center justify-between mb-3">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <Server className="h-4 w-4 text-primary" />
-            Статус системы
+            Серверы
           </h2>
-          <div className="flex items-center gap-2 text-[10px]">
-            <span className="flex items-center gap-1 text-primary">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-              {onlineCount}
-            </span>
-            {warningCount > 0 && (
-              <span className="flex items-center gap-1 text-yellow-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-yellow-400" />
-                {warningCount}
-              </span>
-            )}
-            {offlineCount > 0 && (
-              <span className="flex items-center gap-1 text-destructive">
-                <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
-                {offlineCount}
-              </span>
-            )}
-          </div>
+          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+            {locations.length} локаций
+          </span>
         </div>
 
-        {/* Live metrics bar */}
-        <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
-          <div className="grid grid-cols-3 gap-3">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1">
-                <Gauge className="h-3.5 w-3.5 text-primary" />
-                <span className="text-lg font-bold text-foreground">{liveMetrics.avgPing}</span>
-              </div>
-              <p className="text-[9px] text-muted-foreground">Ср. пинг (мс)</p>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1">
-                <Wifi className="h-3.5 w-3.5 text-primary" />
-                <span className="text-lg font-bold text-foreground">{liveMetrics.activeConnections}</span>
-              </div>
-              <p className="text-[9px] text-muted-foreground">Подключений</p>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1">
-                <Zap className="h-3.5 w-3.5 text-primary" />
-                <span className="text-lg font-bold text-foreground">{(liveMetrics.totalBandwidth / 1000).toFixed(1)}</span>
-              </div>
-              <p className="text-[9px] text-muted-foreground">Гбит/с общий</p>
-            </div>
+        {locations.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card py-8 text-center">
+            <Globe className="mb-2 h-8 w-8 text-muted-foreground/40" />
+            <p className="text-xs font-medium text-muted-foreground">Серверов пока нет</p>
+            <p className="mt-0.5 text-[10px] text-muted-foreground/60">Добавьте серверы через API</p>
           </div>
-          <div className="mt-2.5 flex items-center justify-center gap-4">
-            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-              <ArrowUp className="h-3 w-3 text-primary" />
-              <span>{(liveMetrics.totalUpload / 1000).toFixed(1)} Гбит/с</span>
-            </div>
-            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-              <ArrowDown className="h-3 w-3 text-cyan-400" />
-              <span>{(liveMetrics.totalDownload / 1000).toFixed(1)} Гбит/с</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Server list */}
-        <div className="mt-3 space-y-2">
-          {serverStatuses.map((server) => {
-            const pingColor = server.ping < 50 ? 'text-primary' : server.ping < 100 ? 'text-yellow-400' : 'text-orange-400'
-            const loadColor = server.load < 50 ? 'bg-primary' : server.load < 75 ? 'bg-yellow-400' : 'bg-orange-400'
-            const statusIcon = server.status === 'online'
-              ? <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-              : server.status === 'warning'
-              ? <AlertTriangle className="h-3.5 w-3.5 text-yellow-400" />
-              : <XCircle className="h-3.5 w-3.5 text-destructive" />
-
-            return (
-              <div
-                key={server.flag}
-                className={cn(
-                  'rounded-xl border bg-card p-3 transition-colors',
-                  server.status === 'warning' ? 'border-yellow-400/20' : 'border-border'
-                )}
-              >
+        ) : (
+          <div className="space-y-2">
+            {locations.map((loc: any) => (
+              <div key={loc.id || loc.host || loc.name} className="rounded-xl border border-border bg-card p-3">
                 <div className="flex items-center gap-3">
-                  <span className="text-lg">{FLAG_EMOJIS[server.flag] || server.flag}</span>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary/50 p-1.5 ring-1 ring-border/50">
+                    {loc.flag && loc.flag.length === 2 ? (
+                      <img 
+                        src={`https://flagcdn.com/w80/${loc.flag.toLowerCase()}.png`} 
+                        alt={loc.country}
+                        className="h-full w-full rounded-sm object-cover shadow-sm"
+                      />
+                    ) : (
+                      <span className="text-sm font-bold">{loc.flag}</span>
+                    )}
+                  </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-foreground">{server.country}</span>
-                      {statusIcon}
+                      <span className="text-sm font-semibold text-foreground">{loc.country}</span>
+                      <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
                     </div>
                     <div className="mt-1 flex items-center gap-3 text-[10px] text-muted-foreground">
-                      <span className={cn('font-mono font-semibold', pingColor)}>{server.ping} мс</span>
-                      <span className="flex items-center gap-1">
-                        <ArrowUp className="h-2.5 w-2.5" />
-                        {server.upload} Мбит
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <ArrowDown className="h-2.5 w-2.5" />
-                        {server.download} Мбит
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users className="h-2.5 w-2.5" />
-                        {server.users}
-                      </span>
+                      <span className="font-mono font-semibold text-primary">{loc.ping} мс</span>
+                      <span>Нагрузка: {loc.load}%</span>
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <span className="text-[10px] font-semibold text-foreground">{server.load}%</span>
+                    <span className="text-[10px] font-semibold text-foreground">{loc.load}%</span>
                     <div className="h-1.5 w-14 overflow-hidden rounded-full bg-secondary">
                       <div
-                        className={cn('h-full rounded-full transition-all duration-700', loadColor)}
-                        style={{ width: `${server.load}%` }}
+                        className={cn(
+                          'h-full rounded-full',
+                          loc.load < 50 ? 'bg-primary' : loc.load < 75 ? 'bg-yellow-400' : 'bg-orange-400'
+                        )}
+                        style={{ width: `${loc.load}%` }}
                       />
                     </div>
-                    <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
-                      <Clock className="h-2.5 w-2.5" />
-                      {server.uptime}
-                    </span>
                   </div>
                 </div>
               </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Referral stats */}
-      <div className="mt-6 rounded-xl border border-primary/20 bg-primary/5 p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Gift className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold text-foreground">Реферальная система</span>
+            ))}
+            {/* Ping Chart */}
+            <div className="rounded-xl border border-border bg-card p-4 mt-2">
+              <p className="mb-4 text-xs font-semibold text-muted-foreground">Ринг серверов (мс)</p>
+              <div className="h-40 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={locations}>
+                    <XAxis dataKey="country" stroke="#888888" fontSize={10} tickLine={false} axisLine={false} />
+                    <Tooltip 
+                      cursor={{ fill: 'hsl(var(--secondary))' }}
+                      contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '8px', border: '1px solid hsl(var(--border))' }}
+                      itemStyle={{ color: 'hsl(var(--foreground))', fontSize: '12px' }}
+                    />
+                    <Bar dataKey="ping" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </div>
-          <span className="text-xs font-bold text-primary">{MOCK_REFERRALS.length} приглашений</span>
-        </div>
-        <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
-          <span>Выплачено: {MOCK_REFERRALS.filter(r => r.status === 'credited').length * 30} руб</span>
-          <span>Ожидает: {MOCK_REFERRALS.filter(r => r.status === 'pending').length * 30} руб</span>
-        </div>
-      </div>
+        )}
+      </AnimatedItem>
 
       {/* Sections */}
-      <h2 className="mb-3 mt-6 text-sm font-medium text-muted-foreground">Управление</h2>
-      <div className="space-y-2">
+      <AnimatedItem>
+        <h2 className="mb-3 mt-6 text-sm font-medium text-muted-foreground">Управление</h2>
+      </AnimatedItem>
+      <AnimatedItem className="space-y-2">
         {adminSections.map((section) => {
           const Icon = section.icon
           return (
@@ -335,11 +321,13 @@ export function AdminView({ onNavigate }: AdminViewProps) {
             </button>
           )
         })}
-      </div>
+      </AnimatedItem>
 
       {/* Quick actions */}
-      <h2 className="mb-3 mt-6 text-sm font-medium text-muted-foreground">Быстрые действия</h2>
-      <div className="grid grid-cols-2 gap-3">
+      <AnimatedItem>
+        <h2 className="mb-3 mt-6 text-sm font-medium text-muted-foreground">Быстрые действия</h2>
+      </AnimatedItem>
+      <AnimatedItem className="grid grid-cols-2 gap-3">
         <button
           onClick={() => onNavigate('admin-keys')}
           className="flex items-center gap-2 rounded-xl border border-border bg-card p-3 transition-colors hover:border-primary/30"
@@ -347,11 +335,37 @@ export function AdminView({ onNavigate }: AdminViewProps) {
           <UserPlus className="h-4 w-4 text-primary" />
           <span className="text-xs font-medium text-foreground">Выдать ключ</span>
         </button>
-        <button className="flex items-center gap-2 rounded-xl border border-border bg-card p-3 transition-colors hover:border-primary/30">
+        <button
+          onClick={() => onNavigate('admin-users')}
+          className="flex items-center gap-2 rounded-xl border border-border bg-card p-3 transition-colors hover:border-primary/30"
+        >
           <BarChart3 className="h-4 w-4 text-primary" />
-          <span className="text-xs font-medium text-foreground">Статистика</span>
+          <span className="text-xs font-medium text-foreground">Пользователи</span>
         </button>
-      </div>
-    </div>
+        <button
+          disabled={refreshing}
+          onClick={async () => {
+            setRefreshing(true)
+            const res = await fetch('/api/user/gift/test-trigger', { method: 'POST' })
+            if (res.ok) {
+              setRefreshing(false)
+              onNavigate('home')
+            } else {
+              setRefreshing(false)
+            }
+          }}
+          className="col-span-2 flex items-center justify-center gap-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 p-3 transition-colors hover:bg-primary/10 disabled:opacity-50"
+        >
+          {refreshing ? (
+            <RefreshCw className="h-4 w-4 text-primary animate-spin" />
+          ) : (
+            <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+          )}
+          <span className="text-xs font-bold text-primary">
+            {refreshing ? 'Создание...' : 'Тестовый подарок (Анимация)'}
+          </span>
+        </button>
+      </AnimatedItem>
+    </AnimatedContainer>
   )
 }
