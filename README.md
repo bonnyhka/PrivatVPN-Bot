@@ -1,47 +1,56 @@
-# PrivatVPN Infrastructure & Bot
+# PrivatVPN: Инфраструктура и Бот (Глобальные изменения)
 
-A robust, enterprise-grade VPN platform built with Next.js, Prisma, and the Telegram platform. It integrates advanced anti-DPI methods and proxy protocols to ensure connectivity under restrictive network conditions.
+Комплексная платформа для управления VPN-сервисом, построенная на базе Next.js, Prisma и Telegram. Система включает в себя продвинутые методы обхода DPI и поддержку современных протоколов проксирования для работы в условиях жестких сетевых ограничений.
 
-## 🏗 System Architecture
+## 🚀 Глобальные изменения (Последнее обновление)
+В ходе последнего масштабного обновления была проведена полная реорганизация проекта:
+*   **Реструктуризация скриптов**: Все системные утилиты разнесены по категориям (`scripts/core`, `scripts/diagnostics`, `scripts/maintenance`), что упростило поддержку кода.
+*   **Стабилизация RU-узла**: Внедрена гибридная схема роутинга (Shadowsocks-туннель до Нидерландов + ByeDPI для YouTube).
+*   **Умный роутинг для ИИ**: Настроены приоритетные правила для Gemini и ChatGPT через европейские шлюзы.
+*   **Очистка репозитория**: Удалены временные файлы отладки, настроен правильный `.gitignore`.
 
-The core system consists of multiple micro-processes managed by PM2, utilizing a unified Prisma PostgreSQL database:
-1. **Web App (Next.js)**: Admin dashboard, dynamic subscription API generation (`/api/sub/[id]`), and billing interfaces.
-2. **Telegram Bot**: User onboarding, node selection, support wizards, and automated lifecycle notifications.
-3. **Cron Scripts**: Traffic resetting, statistical syncing, node expiration tracking, and health monitoring.
+## 🏗 Архитектура системы
 
-## 🛡️ Anti-DPI & Network Optimizations
+Система состоит из нескольких микропроцессов, управляемых через PM2 и работающих с единой базой данных PostgreSQL (Prisma):
+1. **Web App (Next.js)**: Админ-панель, API для генерации динамических подписок (`/api/sub/[id]`) и интерфейсы оплаты.
+2. **Telegram Bot**: Регистрация пользователей, выбор локаций, техподдержка и автоматические уведомления.
+3. **Cron-скрипты**: Сброс трафика, синхронизация статистики, мониторинг состояния нод.
 
-We employ advanced, multi-layered strategies to bypass Deep Packet Inspection (DPI) and improve latency:
+## 🛡️ Анти-DPI и оптимизация сети
 
-- **Protocols Supported**:
-  - `VLESS + REALITY` (Primary): Configured with `www.apple.com` SNI. `xtls-rprx-vision` flow is enabled globally to prevent active probing, but specifically **disabled for Netherlands** due to provider compatibility issues.
-  - `Shadowsocks (aes-256-gcm)` (Secondary): Reliable fallback.
-  - `Hysteria2` (Speed): QUIC-based protocol targeting congested/throttled networks.
+Мы используем многоуровневые стратегии для обхода Deep Packet Inspection (DPI) и снижения задержек:
 
-- **Auto-Failover**:
-  - The subscription API injects a `urltest` outbound group ("⚡ Авто") as the primary route in sing-box clients, pinging all available protocols every 3 minutes.
+- **Поддерживаемые протоколы**:
+  - `VLESS + REALITY` (Основной): Маскировка под `www.apple.com`. Включен `xtls-rprx-vision` для защиты от активного сканирования.
+  - `Shadowsocks (aes-128-gcm)`: Стабильный запасной вариант.
+  - `Hysteria2`: Протокол на базе QUIC для работы в условиях сильных помех и ограничений UDP.
 
-- **Gaming & Whitelist Bypass (Split-tunneling)**:
-  - Direct routing injected for core Russian networks (GosUslugi, Yandex, Banks) to alleviate VPN load.
-  - Gaming platforms (Steam, Valve IPs `162.254.0.0/16`, Epic Games) bypass the VPN entirely to ensure 0 added latency.
-  - Cloudflare Resolver (`1.1.1.1`) is uniquely routed directly for non-blocked queries.
+- **Авто-Failover**:
+  - API инжектирует группу `urltest` («⚡ Авто») как основной маршрут в клиентах sing-box, проверяя задержку всех протоколов каждые 3 минуты.
 
-## 🔄 Automated Protocol Monitoring
+- **Умный роутинг (Split-tunneling)**:
+  - Прямой доступ для российских государственных сервисов, банков и Яндекса для снижения нагрузки на VPN.
+  - Игровые платформы (Steam, Epic Games) идут в обход VPN для нулевого пинга.
 
-**Health Checks (`scripts/check-servers.ts`)**:
-To accurately determine if firewalls are blocking handshakes (and not just TCP ports), the custom health monitor executes a full headless `sing-box` connection via a SOCKS5 proxy pipe. It independently verifies VLESS, Shadowsocks, and Hysteria2 every 10 minutes.
+## 🔄 Мониторинг и самовосстановление
 
-**Incident Response**:
-- **Admin Alert**: Immediate Telegram notification generated upon complete server failure.
-- **User Broadcast**: If a server experiences 2 consecutive hard failures, the bot broadcasts an automatic failover instruction ("Зафиксированы сбои...") to affected active users. These messages **auto-delete after 5 minutes** to prevent chat clutter.
+**Проверка здоровья (`scripts/diagnostics/check-servers.ts`)**:
+Каждые 10 минут система выполняет реальное рукопожатие (handshake) через headless sing-box, чтобы убедиться, что протоколы не заблокированы на уровне провайдеров.
 
-## 🚀 Deployment Operations
+**Реагирование на инциденты**:
+- **Админ-уведомления**: Моментальные алерты в Telegram при падении сервера.
+- **Failover-рассылка**: При фиксации сбоя бот автоматически уведомляет пользователей и предлагает переключиться на резервные узлы.
 
-Use PM2 for zero-downtime restarts and management:
+## 🛠 Развертывание и управление
+
+Используйте PM2 для управления процессами:
 ```bash
-# Build the UI and API
+# Сборка интерфейса и API
 npm run build
 
-# Restart standard services
+# Перезапуск сервисов
 pm2 restart web-app check-servers
 ```
+
+---
+*Разработано командой PrivatVPN. Все права на глобальные изменения защищены.*
