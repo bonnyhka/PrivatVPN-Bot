@@ -1,7 +1,7 @@
 import { Client } from 'ssh2'
 import * as fs from 'fs'
-import { decryptField } from '../lib/field-encryption'
-import prisma from '../lib/db'
+import { decryptField } from '../../lib/field-encryption'
+import prisma from '../../lib/db'
 
 async function runOnNode(loc: any) {
   return new Promise<string>((resolve) => {

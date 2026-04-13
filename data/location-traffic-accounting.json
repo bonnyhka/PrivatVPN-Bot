@@ -1,9 +1,9 @@
 {
   "day": "2026-04-12",
-  "updatedAt": "2026-04-13T07:41:44.761Z",
+  "updatedAt": "2026-04-13T08:40:36.005Z",
   "locations": {
     "germany1": {
-      "todayBytes": 1330424311,
+      "todayBytes": "1669749931",
       "lastCycleBytes": 0,
       "updatedAt": "2026-04-11T20:45:13.926Z",
       "history": [
@@ -129,7 +129,7 @@
         }
       ],
       "vpnTraffic": {
-        "todayBytes": 1330424311,
+        "todayBytes": "1669749931",
         "totalBytes": "88568264085"
       },
       "totalBytes": "88568264085",
@@ -137,7 +137,7 @@
       "userTrafficCache": {}
     },
     "netherlands1": {
-      "todayBytes": 284329803,
+      "todayBytes": "322756041",
       "lastCycleBytes": 0,
       "updatedAt": "2026-04-11T20:45:13.926Z",
       "history": [
@@ -263,7 +263,7 @@
         }
       ],
       "vpnTraffic": {
-        "todayBytes": 284329803,
+        "todayBytes": "322756041",
         "totalBytes": "114887458464"
       },
       "totalBytes": "114887458464",
@@ -271,7 +271,7 @@
       "userTrafficCache": {}
     },
     "cmntcblz500021ichzmf6ilyp": {
-      "todayBytes": 101211852,
+      "todayBytes": "101468647",
       "lastCycleBytes": 0,
       "updatedAt": "2026-04-11T20:45:13.926Z",
       "history": [
@@ -397,7 +397,7 @@
         }
       ],
       "vpnTraffic": {
-        "todayBytes": 101211852,
+        "todayBytes": "101468647",
         "totalBytes": "1280637836"
       },
       "totalBytes": "1280637836",

@@ -1,5 +1,5 @@
 import { Client } from 'ssh2'
-import prisma from '../lib/db'
+import prisma from '../../lib/db'
 
 async function check() {
   const loc = await (prisma as any).location.findFirst({ where: { name: 'Russia #1 [RU <-> DE]' } })

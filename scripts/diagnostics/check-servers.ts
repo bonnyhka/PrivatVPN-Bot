@@ -3,7 +3,7 @@ const {
   probeVless,
   findSampleUsersByPlan,
   getPlanVlessPort,
-} = require('../lib/proxy-smoke') as typeof import('../lib/proxy-smoke')
+} = require('../../lib/proxy-smoke') as typeof import('../../lib/proxy-smoke')
 
 const ADMIN_TELEGRAM_ID = process.env.ADMIN_TELEGRAM_ID || ''
 

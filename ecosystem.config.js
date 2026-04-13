@@ -66,7 +66,7 @@ module.exports = {
     {
       name: 'sync-stats',
       script: 'npx',
-      args: 'tsx scripts/sync-stats-singbox.ts',
+      args: 'tsx scripts/core/sync-stats-singbox.ts',
       cwd: appRoot,
       cron_restart: '*/10 * * * *',
       autorestart: false,
@@ -75,7 +75,7 @@ module.exports = {
     {
       name: 'load-monitor',
       script: 'npx',
-      args: 'tsx scripts/update-load.ts',
+      args: 'tsx scripts/core/update-load.ts',
       cwd: appRoot,
       cron_restart: '*/5 * * * *',
       autorestart: false,
@@ -84,7 +84,7 @@ module.exports = {
     {
       name: 'location-diagnostics',
       script: 'node',
-      args: 'scripts/update-location-diagnostics.js',
+      args: 'scripts/diagnostics/update-location-diagnostics.js',
       cwd: appRoot,
       autorestart: true,
       restart_delay: 5000,
@@ -102,7 +102,7 @@ module.exports = {
     {
       name: 'reset-traffic',
       script: 'npx',
-      args: 'tsx scripts/reset-traffic-monthly.ts',
+      args: 'tsx scripts/maintenance/reset-traffic-monthly.ts',
       cwd: appRoot,
       cron_restart: '0 0 * * *',
       autorestart: false,
@@ -111,7 +111,7 @@ module.exports = {
     {
       name: 'check-expirations',
       script: 'npx',
-      args: 'tsx scripts/check-expirations.ts',
+      args: 'tsx scripts/maintenance/check-expirations.ts',
       cwd: appRoot,
       cron_restart: '*/15 * * * *',
       autorestart: false,
@@ -120,7 +120,7 @@ module.exports = {
     {
       name: 'check-servers',
       script: 'npx',
-      args: 'tsx scripts/check-servers.ts',
+      args: 'tsx scripts/diagnostics/check-servers.ts',
       cwd: appRoot,
       cron_restart: '*/5 * * * *',
       autorestart: false,
@@ -129,7 +129,7 @@ module.exports = {
     {
       name: 'check-devices',
       script: 'npx',
-      args: 'tsx scripts/check-devices.ts',
+      args: 'tsx scripts/diagnostics/check-devices.ts',
       cwd: appRoot,
       cron_restart: '*/2 * * * *',
       autorestart: false,
@@ -138,10 +138,19 @@ module.exports = {
     {
       name: 'expire-pending-payments',
       script: 'npx',
-      args: 'tsx scripts/expire-pending-payments.ts',
+      args: 'tsx scripts/maintenance/expire-pending-payments.ts',
       cwd: appRoot,
       cron_restart: '*/10 * * * *',
       autorestart: false,
+      env: { NODE_ENV: 'production', ...appEnv },
+    },
+    {
+      name: 'bg-manager',
+      script: 'npx',
+      args: 'tsx scripts/core/bg_manager.ts',
+      cwd: appRoot,
+      autorestart: true,
+      restart_delay: 10000,
       env: { NODE_ENV: 'production', ...appEnv },
     },
   ],

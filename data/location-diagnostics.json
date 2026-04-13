@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-04-13T07:28:04.205Z",
+  "updatedAt": "2026-04-13T08:38:35.179Z",
   "locations": {
     "germany1": {
-      "checkedAt": "2026-04-13T07:26:53Z",
+      "checkedAt": "2026-04-13T08:37:06Z",
       "targetHost": "fra.speedtest.clouvider.net",
       "targetLabel": "Frankfurt (Clouvider)",
       "pingTargetHost": "fra.speedtest.clouvider.net",
@@ -12,33 +12,33 @@
       "rawStatus": "ok",
       "error": null,
       "system": {
-        "uptimeSec": 1281008,
-        "bootedAt": "2026-03-29T11:36:45Z"
+        "uptimeSec": 1285220,
+        "bootedAt": "2026-03-29T11:36:46Z"
       },
       "pingTarget": {
         "lossPct": 0,
-        "avgMs": 0.356,
-        "maxMs": 0.447
+        "avgMs": 0.38,
+        "maxMs": 0.676
       },
       "mtr": {
         "host": "2a0f:9440:1:b::2",
         "lossPct": 0,
         "avgMs": 0.4,
-        "worstMs": 0.5
+        "worstMs": 0.8
       },
       "iperf": {
-        "senderMbps": 6255.2,
-        "receiverMbps": 6215.6,
-        "retransmits": 4986
+        "senderMbps": 5945.1,
+        "receiverMbps": 5908.5,
+        "retransmits": 4466
       },
       "vpnTraffic": {
-        "egressBytes": 11133840745,
+        "egressBytes": 15454788395,
         "ingressBytes": 0,
-        "totalCounterBytes": 11133840745,
+        "totalCounterBytes": 15454788395,
         "source": "tc",
         "interface": "ens3",
-        "deltaBytes": 201684940,
-        "todayBytes": 19066496516,
+        "deltaBytes": 4101033586,
+        "todayBytes": 23387444166,
         "day": "2026-04-13",
         "history": [
           {
@@ -88,8 +88,13 @@
           },
           {
             "timestamp": "2026-04-13T07:00:00.000Z",
-            "bytes": 299030631,
-            "totalBytes": 19066496516
+            "bytes": 479119062,
+            "totalBytes": 19246584947
+          },
+          {
+            "timestamp": "2026-04-13T08:00:00.000Z",
+            "bytes": 4140859219,
+            "totalBytes": 23387444166
           }
         ],
         "excludedProbeBytes": 0,
@@ -503,6 +508,50 @@
           "mtrAvgMs": 0.4,
           "mtrWorstMs": 0.5,
           "mtrLossPct": 0
+        },
+        {
+          "timestamp": "2026-04-13T07:43:05Z",
+          "pingTargetAvgMs": 0.322,
+          "packetLossPct": 0,
+          "iperfSenderMbps": 6255.2,
+          "iperfReceiverMbps": 6215.6,
+          "retransmits": 4986,
+          "mtrAvgMs": 0.5,
+          "mtrWorstMs": 1.5,
+          "mtrLossPct": 0
+        },
+        {
+          "timestamp": "2026-04-13T07:59:16Z",
+          "pingTargetAvgMs": 0.328,
+          "packetLossPct": 0,
+          "iperfSenderMbps": 6255.2,
+          "iperfReceiverMbps": 6215.6,
+          "retransmits": 4986,
+          "mtrAvgMs": 0.5,
+          "mtrWorstMs": 1.3,
+          "mtrLossPct": 0
+        },
+        {
+          "timestamp": "2026-04-13T08:15:32Z",
+          "pingTargetAvgMs": 1.028,
+          "packetLossPct": 0,
+          "iperfSenderMbps": 6255.2,
+          "iperfReceiverMbps": 6215.6,
+          "retransmits": 4986,
+          "mtrAvgMs": 1,
+          "mtrWorstMs": 1.6,
+          "mtrLossPct": 0
+        },
+        {
+          "timestamp": "2026-04-13T08:37:06Z",
+          "pingTargetAvgMs": 0.38,
+          "packetLossPct": 0,
+          "iperfSenderMbps": 5945.1,
+          "iperfReceiverMbps": 5908.5,
+          "retransmits": 4466,
+          "mtrAvgMs": 0.4,
+          "mtrWorstMs": 0.8,
+          "mtrLossPct": 0
         }
       ],
       "checks": [
@@ -511,7 +560,7 @@
           "port": 12443,
           "label": "VLESS",
           "isUp": true,
-          "latency": 427,
+          "latency": 602,
           "error": null,
           "httpCode": 204,
           "probeType": "smoke"
@@ -521,7 +570,7 @@
           "port": 10443,
           "label": "Fortress",
           "isUp": true,
-          "latency": 403,
+          "latency": 444,
           "error": null,
           "httpCode": 204,
           "probeType": "smoke"
@@ -532,7 +581,7 @@
           "label": "Guardian",
           "isUp": false,
           "latency": 0,
-          "error": "Command failed: curl --silent --show-error --output /dev/null --write-out %{http_code} --connect-timeout 5 --max-time 15 --socks5-hostname 127.0.0.1:30287 https://www.gstatic.com/generate_204\ncurl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to www.gstatic.com:443 \n",
+          "error": "Command failed: curl --silent --show-error --output /dev/null --write-out %{http_code} --connect-timeout 5 --max-time 15 --socks5-hostname 127.0.0.1:35182 https://www.gstatic.com/generate_204\ncurl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to www.gstatic.com:443 \n",
           "httpCode": null,
           "probeType": "smoke"
         },
@@ -542,7 +591,7 @@
           "label": "Scout",
           "isUp": false,
           "latency": 0,
-          "error": "Command failed: curl --silent --show-error --output /dev/null --write-out %{http_code} --connect-timeout 5 --max-time 15 --socks5-hostname 127.0.0.1:24106 https://www.gstatic.com/generate_204\ncurl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to www.gstatic.com:443 \n",
+          "error": "Command failed: curl --silent --show-error --output /dev/null --write-out %{http_code} --connect-timeout 5 --max-time 15 --socks5-hostname 127.0.0.1:23741 https://www.gstatic.com/generate_204\ncurl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to www.gstatic.com:443 \n",
           "httpCode": null,
           "probeType": "smoke"
         },
@@ -551,7 +600,7 @@
           "port": 8443,
           "label": "VLESS Alt",
           "isUp": true,
-          "latency": 402,
+          "latency": 534,
           "error": null,
           "httpCode": 204,
           "probeType": "smoke"
@@ -562,7 +611,7 @@
       "isActive": true
     },
     "netherlands1": {
-      "checkedAt": "2026-04-13T07:27:21Z",
+      "checkedAt": "2026-04-13T08:37:41Z",
       "targetHost": "iperf-ams.vsys.host",
       "targetLabel": "Amsterdam",
       "pingTargetHost": "iperf-ams.vsys.host",
@@ -572,33 +621,33 @@
       "rawStatus": "ok",
       "error": null,
       "system": {
-        "uptimeSec": 757679,
+        "uptimeSec": 761899,
         "bootedAt": "2026-04-04T12:59:22Z"
       },
       "pingTarget": {
         "lossPct": 0,
-        "avgMs": 4.315,
-        "maxMs": 4.481
+        "avgMs": 4.373,
+        "maxMs": 4.56
       },
       "mtr": {
         "host": "dedicated.sollutium.com",
         "lossPct": 0,
         "avgMs": 4.3,
-        "worstMs": 4.9
+        "worstMs": 4.5
       },
       "iperf": {
-        "senderMbps": 6852.2,
-        "receiverMbps": 6844.2,
-        "retransmits": 168359
+        "senderMbps": 5733.1,
+        "receiverMbps": 5723.4,
+        "retransmits": 14809
       },
       "vpnTraffic": {
-        "egressBytes": 9424416720,
+        "egressBytes": 13563578602,
         "ingressBytes": 0,
-        "totalCounterBytes": 9424416720,
+        "totalCounterBytes": 13563578602,
         "source": "tc",
         "interface": "ens3",
-        "deltaBytes": 46127545,
-        "todayBytes": 20047129980,
+        "deltaBytes": 3850990093,
+        "todayBytes": 24186291862,
         "day": "2026-04-13",
         "history": [
           {
@@ -648,8 +697,13 @@
           },
           {
             "timestamp": "2026-04-13T07:00:00.000Z",
-            "bytes": 48943057,
-            "totalBytes": 20047129980
+            "bytes": 226385356,
+            "totalBytes": 20224572279
+          },
+          {
+            "timestamp": "2026-04-13T08:00:00.000Z",
+            "bytes": 3961719583,
+            "totalBytes": 24186291862
           }
         ],
         "excludedProbeBytes": 0,
@@ -1063,6 +1117,50 @@
           "mtrAvgMs": 4.3,
           "mtrWorstMs": 4.9,
           "mtrLossPct": 0
+        },
+        {
+          "timestamp": "2026-04-13T07:43:33Z",
+          "pingTargetAvgMs": 4.247,
+          "packetLossPct": 0,
+          "iperfSenderMbps": 6852.2,
+          "iperfReceiverMbps": 6844.2,
+          "retransmits": 168359,
+          "mtrAvgMs": 4.4,
+          "mtrWorstMs": 4.7,
+          "mtrLossPct": 0
+        },
+        {
+          "timestamp": "2026-04-13T07:59:46Z",
+          "pingTargetAvgMs": 4.321,
+          "packetLossPct": 0,
+          "iperfSenderMbps": 6852.2,
+          "iperfReceiverMbps": 6844.2,
+          "retransmits": 168359,
+          "mtrAvgMs": 4.4,
+          "mtrWorstMs": 4.8,
+          "mtrLossPct": 0
+        },
+        {
+          "timestamp": "2026-04-13T08:16:01Z",
+          "pingTargetAvgMs": 4.446,
+          "packetLossPct": 0,
+          "iperfSenderMbps": 6852.2,
+          "iperfReceiverMbps": 6844.2,
+          "retransmits": 168359,
+          "mtrAvgMs": 4.4,
+          "mtrWorstMs": 4.8,
+          "mtrLossPct": 0
+        },
+        {
+          "timestamp": "2026-04-13T08:37:41Z",
+          "pingTargetAvgMs": 4.373,
+          "packetLossPct": 0,
+          "iperfSenderMbps": 5733.1,
+          "iperfReceiverMbps": 5723.4,
+          "retransmits": 14809,
+          "mtrAvgMs": 4.3,
+          "mtrWorstMs": 4.5,
+          "mtrLossPct": 0
         }
       ],
       "checks": [
@@ -1071,7 +1169,7 @@
           "port": 12443,
           "label": "VLESS",
           "isUp": true,
-          "latency": 236,
+          "latency": 266,
           "error": null,
           "httpCode": 204,
           "probeType": "smoke"
@@ -1081,7 +1179,7 @@
           "port": 10443,
           "label": "Fortress",
           "isUp": true,
-          "latency": 132,
+          "latency": 213,
           "error": null,
           "httpCode": 204,
           "probeType": "smoke"
@@ -1092,7 +1190,7 @@
           "label": "Guardian",
           "isUp": false,
           "latency": 0,
-          "error": "Command failed: curl --silent --show-error --output /dev/null --write-out %{http_code} --connect-timeout 5 --max-time 15 --socks5-hostname 127.0.0.1:33047 https://www.gstatic.com/generate_204\ncurl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to www.gstatic.com:443 \n",
+          "error": "Command failed: curl --silent --show-error --output /dev/null --write-out %{http_code} --connect-timeout 5 --max-time 15 --socks5-hostname 127.0.0.1:39535 https://www.gstatic.com/generate_204\ncurl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to www.gstatic.com:443 \n",
           "httpCode": null,
           "probeType": "smoke"
         },
@@ -1102,7 +1200,7 @@
           "label": "Scout",
           "isUp": false,
           "latency": 0,
-          "error": "Command failed: curl --silent --show-error --output /dev/null --write-out %{http_code} --connect-timeout 5 --max-time 15 --socks5-hostname 127.0.0.1:33626 https://www.gstatic.com/generate_204\ncurl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to www.gstatic.com:443 \n",
+          "error": "Command failed: curl --silent --show-error --output /dev/null --write-out %{http_code} --connect-timeout 5 --max-time 15 --socks5-hostname 127.0.0.1:30780 https://www.gstatic.com/generate_204\ncurl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to www.gstatic.com:443 \n",
           "httpCode": null,
           "probeType": "smoke"
         },
@@ -1111,7 +1209,7 @@
           "port": 8443,
           "label": "VLESS Alt",
           "isUp": true,
-          "latency": 137,
+          "latency": 208,
           "error": null,
           "httpCode": 204,
           "probeType": "smoke"
@@ -1122,7 +1220,7 @@
       "isActive": true
     },
     "cmntcblz500021ichzmf6ilyp": {
-      "checkedAt": "2026-04-13T07:27:43Z",
+      "checkedAt": "2026-04-13T08:38:09Z",
       "targetHost": "ru1.privatevp.space",
       "targetLabel": "Russia (PrivatVPN)",
       "pingTargetHost": "ru1.privatevp.space",
@@ -1132,33 +1230,33 @@
       "rawStatus": "ok",
       "error": null,
       "system": {
-        "uptimeSec": 213542,
-        "bootedAt": "2026-04-10T20:08:41Z"
+        "uptimeSec": 217767,
+        "bootedAt": "2026-04-10T20:08:42Z"
       },
       "pingTarget": {
         "lossPct": 0,
-        "avgMs": 0.069,
-        "maxMs": 0.074
+        "avgMs": 0.103,
+        "maxMs": 0.172
       },
       "mtr": {
         "host": "box-911655",
         "lossPct": 0,
         "avgMs": 0.1,
-        "worstMs": 0.2
+        "worstMs": 0.1
       },
       "iperf": {
-        "senderMbps": 9555.6,
-        "receiverMbps": 9555.3,
-        "retransmits": 3
+        "senderMbps": 9588,
+        "receiverMbps": 9587,
+        "retransmits": 2
       },
       "vpnTraffic": {
-        "egressBytes": 497583795,
+        "egressBytes": 499327052,
         "ingressBytes": 0,
-        "totalCounterBytes": 497583795,
+        "totalCounterBytes": 499327052,
         "source": "tc",
         "interface": "ens3",
-        "deltaBytes": 1032709,
-        "todayBytes": 2230966964,
+        "deltaBytes": 547689,
+        "todayBytes": 2232710221,
         "day": "2026-04-13",
         "history": [
           {
@@ -1208,8 +1306,13 @@
           },
           {
             "timestamp": "2026-04-13T07:00:00.000Z",
-            "bytes": 4677635,
-            "totalBytes": 2230966964
+            "bytes": 5143776,
+            "totalBytes": 2231433105
+          },
+          {
+            "timestamp": "2026-04-13T08:00:00.000Z",
+            "bytes": 1277116,
+            "totalBytes": 2232710221
           }
         ],
         "excludedProbeBytes": 0,
@@ -1623,6 +1726,50 @@
           "mtrAvgMs": 0.1,
           "mtrWorstMs": 0.2,
           "mtrLossPct": 0
+        },
+        {
+          "timestamp": "2026-04-13T07:43:55Z",
+          "pingTargetAvgMs": 0.088,
+          "packetLossPct": 0,
+          "iperfSenderMbps": 9555.6,
+          "iperfReceiverMbps": 9555.3,
+          "retransmits": 3,
+          "mtrAvgMs": 0.1,
+          "mtrWorstMs": 0.1,
+          "mtrLossPct": 0
+        },
+        {
+          "timestamp": "2026-04-13T08:00:11Z",
+          "pingTargetAvgMs": 0.075,
+          "packetLossPct": 0,
+          "iperfSenderMbps": 9555.6,
+          "iperfReceiverMbps": 9555.3,
+          "retransmits": 3,
+          "mtrAvgMs": 0.1,
+          "mtrWorstMs": 0.1,
+          "mtrLossPct": 0
+        },
+        {
+          "timestamp": "2026-04-13T08:16:23Z",
+          "pingTargetAvgMs": 0.072,
+          "packetLossPct": 0,
+          "iperfSenderMbps": 9555.6,
+          "iperfReceiverMbps": 9555.3,
+          "retransmits": 3,
+          "mtrAvgMs": 0.1,
+          "mtrWorstMs": 0.2,
+          "mtrLossPct": 0
+        },
+        {
+          "timestamp": "2026-04-13T08:38:09Z",
+          "pingTargetAvgMs": 0.103,
+          "packetLossPct": 0,
+          "iperfSenderMbps": 9588,
+          "iperfReceiverMbps": 9587,
+          "retransmits": 2,
+          "mtrAvgMs": 0.1,
+          "mtrWorstMs": 0.1,
+          "mtrLossPct": 0
         }
       ],
       "checks": [
@@ -1632,7 +1779,7 @@
           "label": "VLESS",
           "isUp": false,
           "latency": 0,
-          "error": "Command failed: curl --silent --show-error --output /dev/null --write-out %{http_code} --connect-timeout 5 --max-time 15 --socks5-hostname 127.0.0.1:31310 https://www.gstatic.com/generate_204\ncurl: (97) Can't complete SOCKS5 connection to www.gstatic.com. (1)\n",
+          "error": "Command failed: curl --silent --show-error --output /dev/null --write-out %{http_code} --connect-timeout 5 --max-time 15 --socks5-hostname 127.0.0.1:39074 https://www.gstatic.com/generate_204\ncurl: (97) Can't complete SOCKS5 connection to www.gstatic.com. (1)\n",
           "httpCode": null,
           "probeType": "smoke"
         },
@@ -1641,7 +1788,7 @@
           "port": 10443,
           "label": "Fortress",
           "isUp": true,
-          "latency": 1573,
+          "latency": 1192,
           "error": null,
           "httpCode": 204,
           "probeType": "smoke"
@@ -1652,7 +1799,7 @@
           "label": "Guardian",
           "isUp": false,
           "latency": 0,
-          "error": "Command failed: curl --silent --show-error --output /dev/null --write-out %{http_code} --connect-timeout 5 --max-time 15 --socks5-hostname 127.0.0.1:33812 https://www.gstatic.com/generate_204\ncurl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to www.gstatic.com:443 \n",
+          "error": "Command failed: curl --silent --show-error --output /dev/null --write-out %{http_code} --connect-timeout 5 --max-time 15 --socks5-hostname 127.0.0.1:34154 https://www.gstatic.com/generate_204\ncurl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to www.gstatic.com:443 \n",
           "httpCode": null,
           "probeType": "smoke"
         },
@@ -1662,7 +1809,7 @@
           "label": "Scout",
           "isUp": false,
           "latency": 0,
-          "error": "Command failed: curl --silent --show-error --output /dev/null --write-out %{http_code} --connect-timeout 5 --max-time 15 --socks5-hostname 127.0.0.1:27299 https://www.gstatic.com/generate_204\ncurl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to www.gstatic.com:443 \n",
+          "error": "Command failed: curl --silent --show-error --output /dev/null --write-out %{http_code} --connect-timeout 5 --max-time 15 --socks5-hostname 127.0.0.1:24776 https://www.gstatic.com/generate_204\ncurl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to www.gstatic.com:443 \n",
           "httpCode": null,
           "probeType": "smoke"
         },
@@ -1671,7 +1818,7 @@
           "port": 8443,
           "label": "VLESS Alt",
           "isUp": true,
-          "latency": 2034,
+          "latency": 840,
           "error": null,
           "httpCode": 204,
           "probeType": "smoke"

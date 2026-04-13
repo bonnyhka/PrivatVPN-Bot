@@ -1,9 +1,9 @@
-import prisma from '../lib/db'
+import prisma from '../../lib/db'
 import fs from 'fs'
 import path from 'path'
-import { getAppDayKey } from '../lib/day-boundary'
+import { getAppDayKey } from '../../lib/day-boundary'
 
-const NODE_TRAFFIC_FILE = path.resolve(__dirname, '..', 'data', 'location-traffic-accounting.json')
+const NODE_TRAFFIC_FILE = path.resolve(__dirname, '..', '..', 'data', 'location-traffic-accounting.json')
 
 async function resetDailyStats() {
   console.log(`[RESET-DAILY] Starting reset at ${new Date().toISOString()} (Target: 00:00 MSK / 21:00 UTC)`)
