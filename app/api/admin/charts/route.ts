@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { getAppDayKey, getStartOfAppDay } from '@/lib/day-boundary'
+import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/payments'
 
 export async function GET() {
   try {
@@ -7,15 +9,14 @@ export async function GET() {
     await requireAdmin()
 
     const now = new Date()
-    const sevenDaysAgo = new Date(now)
-    sevenDaysAgo.setDate(now.getDate() - 6)
-    sevenDaysAgo.setHours(0, 0, 0, 0)
+    const todayStart = getStartOfAppDay(now)
+    const sevenDaysAgo = new Date(todayStart.getTime() - 6 * 24 * 60 * 60 * 1000)
 
     // Fetch raw data
     const [payments, users] = await Promise.all([
       prisma.payment.findMany({
         where: {
-          status: 'paid',
+          status: { in: SUCCESSFUL_PAYMENT_STATUSES as any },
           createdAt: { gte: sevenDaysAgo }
         },
         select: { amount: true, createdAt: true }
@@ -35,21 +36,21 @@ export async function GET() {
     // Initialize map for the past 7 days to ensure all days are represented
     for (let i = 0; i < 7; i++) {
       const date = new Date(sevenDaysAgo)
-      date.setDate(sevenDaysAgo.getDate() + i)
-      const dateStr = date.toISOString().split('T')[0]
+      date.setUTCDate(sevenDaysAgo.getUTCDate() + i)
+      const dateStr = getAppDayKey(date)
       revenueMap.set(dateStr, 0)
       usersMap.set(dateStr, 0)
     }
 
     payments.forEach((p: { amount: number; createdAt: Date }) => {
-      const dateStr = p.createdAt.toISOString().split('T')[0]
+      const dateStr = getAppDayKey(new Date(p.createdAt))
       if (revenueMap.has(dateStr)) {
         revenueMap.set(dateStr, revenueMap.get(dateStr)! + p.amount)
       }
     })
 
     users.forEach((u: { createdAt: Date }) => {
-      const dateStr = u.createdAt.toISOString().split('T')[0]
+      const dateStr = getAppDayKey(new Date(u.createdAt))
       if (usersMap.has(dateStr)) {
         usersMap.set(dateStr, usersMap.get(dateStr)! + 1)
       }

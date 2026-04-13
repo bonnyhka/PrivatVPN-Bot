@@ -1,22 +1,79 @@
 import { NextResponse } from 'next/server'
-import prisma from '@/lib/db'
-import { getDynamicPlans } from '@/lib/plans'
-import crypto from 'crypto'
-import { buildSubscriptionLookupWhere, DUMMY_UUID } from '@/lib/security'
-import { getClientIp } from '@/lib/request-security'
-import { rateLimit } from '@/lib/rate-limit'
+import prisma from '../../../../lib/db'
+import { 
+  getPlanVlessPort, 
+  isPlanAllowedInLocation,
+} from '../../../../lib/vpn-protocols'
+import { getDynamicPlans, getDisplayTrafficLimit } from '../../../../lib/plans'
+import { rateLimit } from '../../../../lib/rate-limit'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+// Constants for sub-generation
+const DUMMY_UUID = '44444444-4444-4444-8444-444444444444'
+const DEFAULT_REALITY_SNI = 'www.apple.com'
+const CLIENT_HEALTHCHECK_URL = 'https://www.apple.com/library/test/success.html'
+const RU_NODE_IP = '185.72.147.29'
 
-// Use loc.name directly
+const PROXY_RESOURCES = {
+  geosite: ['telegram', 'instagram', 'meta', 'twitter', 'openai', 'anthropic', 'netflix', 'tiktok'],
+  geoip: ['telegram', 'openai', 'netflix', 'tiktok']
+}
 
+const DIRECT_RESOURCES = {
+  geosite: ['youtube', 'discord']
+}
 
-function getPlanVlessPort(planId: string) {
-  if (planId === 'fortress') return 10443
-  if (planId === 'guardian') return 11443
-  if (planId === 'scout') return 9443
-  return 12443
+const DIRECT_DOMAIN_SUFFIXES = [
+  'ru', 'su', 'kz', 'by', 'gov.ru', 'mil.ru', 'nalog.ru', 'gosuslugi.ru',
+  'vk.com', 'ok.ru', 'yandex.ru', 'mail.ru', 'rambler.ru', 'avito.ru',
+  'ozon.ru', 'wildberries.ru', 'sberbank.ru', 'tinkoff.ru', 'vtb.ru',
+  'kaspersky.ru', 'drweb.ru', '1c.ru', 'bitrix24.ru', 'ya.ru'
+]
+
+const DIRECT_DOMAIN_KEYWORDS = [
+  'sber', 'tinkoff', 'vtb', 'alfa', 'gosuslugi', 'nalog', 'dnevnik',
+  'mos.ru', 'spb.ru', 'yandex', 'mail.ru', 'vkontakte', 'odnoklassniki'
+]
+
+const DIRECT_IP_CIDR = [
+  '95.173.128.0/18', '178.248.232.0/21', '185.72.144.0/22', // RU nets
+  '127.0.0.0/8', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '100.64.0.0/10' // local
+]
+
+function getClientIp(req: Request) {
+  const forwarded = req.headers.get('x-forwarded-for')
+  if (forwarded) return forwarded.split(',')[0].trim()
+  return '127.0.0.1'
+}
+
+function getLocationPriority(planId: string, locationId: string): number {
+  if (locationId === 'germany1') return 1
+  if (locationId === 'netherlands1') return 2
+  if (locationId === 'cmntcblz500021ichzmf6ilyp') return 10
+  return 100
+}
+
+function buildSubscriptionUserinfo(used: bigint, expiry: Date, total: string | null | undefined) {
+  const safeTotal = total || 'unlimited'
+  const totalBytes = safeTotal.includes('unlimited') ? 0 : parseInt(safeTotal) * 1024 * 1024 * 1024
+  return `upload=0; download=${used}; total=${totalBytes}; expire=${Math.floor(expiry.getTime() / 1000)}`
+}
+
+function buildSubscriptionHeaders(userinfo: string, profileTitle: string, filename: string) {
+  return {
+    'subscription-userinfo': userinfo,
+    'profile-title': profileTitle,
+    'content-disposition': `attachment; filename="${filename}"`,
+    'cache-control': 'no-store, no-cache, must-revalidate, max-age=0',
+    'pragma': 'no-cache',
+    'profile-web-page-url': 'https://t.me/privatvpnru',
+    'support-url': 'https://t.me/privatruvpn_bot',
+    'ping-type': 'proxy',
+    'check-url-via-proxy': CLIENT_HEALTHCHECK_URL,
+    'mux-enable': '0',
+    'server-address-resolve-enable': '1',
+    'server-address-resolve-dns-domain': 'https://common.dot.dns.yandex.net/dns-query',
+    'server-address-resolve-dns-ip': '77.88.8.8',
+  }
 }
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -29,7 +86,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
     const { id } = await params
     const sub = await prisma.subscription.findFirst({
-      where: buildSubscriptionLookupWhere(id),
+      where: {
+        OR: [
+          { id: id },
+          { subscriptionUrl: { endsWith: id } }
+        ]
+      },
       include: { user: true }
     })
 
@@ -39,13 +101,22 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
     const plans = await getDynamicPlans()
     const plan = plans.find(p => p.id === sub.planId)
+    const trafficLimit = (plan as any)?.trafficLimit ?? Number.MAX_SAFE_INTEGER
+    
+    if (BigInt(sub.trafficUsed) >= BigInt(trafficLimit)) {
+      return new Response('Traffic limit exceeded', { status: 403 })
+    }
+
     const locations = await prisma.location.findMany({ where: { isActive: true } })
 
-    const getLocationPriority = (locationId: string) => (locationId === 'germany1' ? 0 : (locationId === 'netherlands1' ? 1 : 10))
-    let sortedLocations = locations.sort((a, b) => getLocationPriority(a.id) - getLocationPriority(b.id))
-
-    if (sub.planId === 'scout') sortedLocations = sortedLocations.filter(l => l.id === 'germany1')
-    else if (sub.planId === 'guardian') sortedLocations = sortedLocations.filter(l => l.id === 'germany1' || l.id === 'netherlands1')
+    let sortedLocations = []
+    try {
+      let filteredLocations = locations.filter(l => isPlanAllowedInLocation(sub.planId, l.country))
+      sortedLocations = filteredLocations.sort((a, b) => getLocationPriority(sub.planId, a.id) - getLocationPriority(sub.planId, b.id))
+    } catch (e) {
+      console.error('Location sorting error:', e)
+      sortedLocations = locations // Fallback to all locations unsorted
+    }
 
     const userAgent = (req.headers.get('user-agent') || '').toLowerCase()
     const isAdvancedClient = userAgent.includes('sing-box') || userAgent.includes('hiddify') || req.headers.get('x-privatvpn-client') === 'desktop'
@@ -54,83 +125,74 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const getEmojiFlag = (code: string) => code.toUpperCase().replace(/./g, char => String.fromCodePoint(char.charCodeAt(0) + 127397))
 
     for (const loc of sortedLocations) {
-      const userUuid = sub.vlessUuid || (loc as any).vlessUuid || DUMMY_UUID
+      const userUuid = sub.vlessUuid || DUMMY_UUID
       const ruName = loc.name
       const flag = getEmojiFlag(loc.flag)
-      const vlessSni = (loc as any).vlessRealitySni || 'www.microsoft.com'
+      const vlessSni = (loc as any).vlessRealitySni || DEFAULT_REALITY_SNI
+      const hostOnly = loc.host.split(':')[0]
       
-      const vPort = getPlanVlessPort(sub.planId)
-      configs.push(`vless://${userUuid}@${loc.host}:${vPort}?encryption=none&security=reality&sni=${vlessSni}&fp=chrome&alpn=h2&pbk=${(loc as any).vlessRealityPublicKey}&sid=${(loc as any).vlessRealityShortId || '9f10e304859bc070'}&type=tcp&flow=xtls-rprx-vision#${encodeURIComponent(flag + ' ' + ruName)}`)
-
-      const ssPass = crypto.createHash('md5').update(`${loc.id}privat`).digest('hex')
-      configs.push(`ss://${Buffer.from(`chacha20-ietf-poly1305:${ssPass}`).toString('base64').replace(/=/g, '')}@${loc.host}:15113#${encodeURIComponent(flag + ' ' + ruName + ' ⚡')}`)
-
-      configs.push(`hysteria2://${userUuid}@${loc.host}:443/?sni=${vlessSni}&insecure=1&alpn=h3%2Ch2%2Chttp%2F1.1#${encodeURIComponent(flag + ' ' + ruName + ' 📱')}`)
+      let vPort = loc.vlessPort || getPlanVlessPort(sub.planId)
+      configs.push(`vless://${userUuid}@${hostOnly}:${vPort}?encryption=none&security=reality&sni=${vlessSni}&fp=chrome&alpn=h2%2Chttp%2F1.1&pbk=${(loc as any).vlessRealityPublicKey}&sid=${(loc as any).vlessRealityShortId || '2780393bb22527c3'}&type=tcp#${encodeURIComponent(flag + ' ' + ruName)}`)
     }
 
-    const trafficLimitBytes = (plan?.trafficLimit && plan.trafficLimit !== Number.MAX_SAFE_INTEGER) ? plan.trafficLimit : 0;
-    const userinfo = `upload=0;download=${sub.trafficUsed.toString()};total=${trafficLimitBytes};expire=${Math.floor(new Date(sub.expiresAt).getTime() / 1000)}`;
-    
-    // Improved profile title: PrivatVPN [PlanName]
+    const userinfo = buildSubscriptionUserinfo(sub.trafficUsed, new Date(sub.expiresAt), String(getDisplayTrafficLimit(plan) ?? 'unlimited'))
     const planName = plan?.name || sub.planId.toUpperCase()
     const profileTitle = `PrivatVPN [${planName}]`
 
     if (isAdvancedClient) {
       const outbounds = []
       for (const l of sortedLocations) {
-        const userUuid = sub.vlessUuid || (l as any).vlessUuid || DUMMY_UUID
+        const userUuid = sub.vlessUuid || DUMMY_UUID
         const ruName = l.name
         const flag = getEmojiFlag(l.flag)
+        const hostOnly = l.host.split(':')[0]
         
+        let vPort = l.vlessPort || getPlanVlessPort(sub.planId)
         outbounds.push({
           type: 'vless',
           tag: `${flag} ${ruName}`,
-          server: l.host,
-          server_port: getPlanVlessPort(sub.planId),
+          server: hostOnly,
+          server_port: vPort,
           uuid: userUuid,
-          flow: 'xtls-rprx-vision',
+          multiplex: { enabled: false },
           tls: {
             enabled: true,
-            server_name: (l as any).vlessRealitySni || 'www.microsoft.com',
+            server_name: (l as any).vlessRealitySni || DEFAULT_REALITY_SNI,
+            alpn: ['h2', 'http/1.1'],
             utls: { enabled: true, fingerprint: 'chrome' },
-            reality: { enabled: true, public_key: (l as any).vlessRealityPublicKey, short_id: (l as any).vlessRealityShortId || '9f10e304859bc070' }
+            reality: { enabled: true, public_key: (l as any).vlessRealityPublicKey, short_id: (l as any).vlessRealityShortId || '2780393bb22527c3' }
           }
         })
-
-        const ssPass = crypto.createHash('md5').update(`${l.id}privat`).digest('hex')
-        outbounds.push({
-          type: 'shadowsocks',
-          tag: `${flag} ${ruName} ⚡`,
-          server: l.host,
-          server_port: 15113,
-          method: 'chacha20-ietf-poly1305',
-          password: ssPass
-        })
-
-        outbounds.push({
-          type: 'hysteria2',
-          tag: `${flag} ${ruName} 📱`,
-          server: l.host,
-          server_port: 443,
-          password: userUuid,
-          tls: { enabled: true, server_name: (l as any).vlessRealitySni || 'www.microsoft.com', insecure: true }
-        } as any)
       }
 
-      const bestOutbound = outbounds[0]?.tag || 'direct'
+      const allTags = outbounds.map(o => o.tag)
+      const urltestTag = '?????? ????????-??????????'
       const singboxConfig = {
         dns: {
           servers: [
-            { tag: 'proxy-dns', address: 'https://dns.adguard-dns.com/dns-query', detour: 'direct' },
-            { tag: 'local-dns', address: 'local', detour: 'direct' }
+            { tag: 'proxy-dns', address: 'https://dns.adguard-dns.com/dns-query', address_resolver: 'local-dns', detour: urltestTag },
+            { tag: 'local-dns', address: 'https://8.8.8.8/dns-query', address_resolver: 'bootstrap-dns', detour: 'direct' },
+            { tag: 'bootstrap-dns', address: '8.8.8.8', detour: 'direct' },
+            { tag: 'block-dns', address: 'rcode://name_error' }
           ],
           rules: [
-            { protocol: 'dns', server: 'local-dns' },
-            { domain_suffix: ['ru', 'sberbank.ru', 'tinkoff.ru', 'gosuslugi.ru'], server: 'local-dns' }
+            { domain_suffix: DIRECT_DOMAIN_SUFFIXES, domain_keyword: DIRECT_DOMAIN_KEYWORDS, server: 'local-dns' },
+            { geosite: ['category-ads-all'], server: 'block-dns' }
           ],
-          final: 'local-dns'
+          final: 'proxy-dns',
+          strategy: 'ipv4_only'
         },
+        rule_set: [
+          {
+            tag: 'antizapret',
+            type: 'remote',
+            format: 'binary',
+            url: 'https://krasovs.ky/sing-box/antizapret.srs',
+            download_detour: urltestTag
+          }
+        ],
         outbounds: [
+          { type: 'urltest', tag: urltestTag, outbounds: allTags, url: CLIENT_HEALTHCHECK_URL, interval: '3m', tolerance: 50, idle_timeout: '30m' },
           ...outbounds,
           { type: 'direct', tag: 'direct' },
           { type: 'block', tag: 'block' },
@@ -139,34 +201,40 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         route: {
           rules: [
             { protocol: 'dns', outbound: 'dns-out' },
-            { domain_suffix: ['sberbank.ru', 'tinkoff.ru', 'vtb.ru', 'gosuslugi.ru', 'yandex.ru', 'vk.com'], outbound: 'direct' }
+            { geosite: ['category-ads-all'], outbound: 'block' },
+            { geosite: DIRECT_RESOURCES.geosite, outbound: 'direct' },
+            { geosite: PROXY_RESOURCES.geosite, outbound: urltestTag },
+            { geoip: PROXY_RESOURCES.geoip, outbound: urltestTag },
+            { domain_suffix: DIRECT_DOMAIN_SUFFIXES, domain_keyword: DIRECT_DOMAIN_KEYWORDS, outbound: 'direct' },
+            { ip_cidr: DIRECT_IP_CIDR, outbound: 'direct' },
+            { rule_set: 'antizapret', outbound: urltestTag }
           ],
-          final: bestOutbound,
+          final: 'direct',
+          default_domain_resolver: { server: 'proxy-dns', strategy: 'ipv4_only' },
+          domain_strategy: 'ipv4_only',
           auto_detect_interface: true
         }
       }
-      return NextResponse.json(singboxConfig, { 
-        headers: { 
-          'subscription-userinfo': userinfo,
-          'profile-title': profileTitle,
-          'content-disposition': `attachment; filename="${profileTitle}.json"`,
-          'profile-web-page-url': 'https://t.me/privatvpnru',
-          'support-url': 'https://t.me/privatruvpn_bot'
-        } 
+      return NextResponse.json(singboxConfig, {
+        headers: buildSubscriptionHeaders(userinfo, profileTitle, `${profileTitle}.json`)
       })
     }
 
-    return new NextResponse(Buffer.from(configs.join('\n') + '\n').toString('base64'), {
-      headers: { 
-        'content-type': 'text/plain; charset=utf-8', 
-        'subscription-userinfo': userinfo,
-        'profile-title': profileTitle,
-        'content-disposition': `attachment; filename="${profileTitle}.txt"`,
-        'profile-web-page-url': 'https://t.me/privatvpnru',
-        'support-url': 'https://t.me/privatruvpn_bot'
-      }
+    const happMeta = [
+      '#ping-type: proxy',
+      `#check-url-via-proxy: ${CLIENT_HEALTHCHECK_URL}`,
+      '#mux-enable: 0',
+      '#profile-update-interval: 1',
+      '#server-address-resolve-enable: 1',
+      '#server-address-resolve-dns-domain: https://common.dot.dns.yandex.net/dns-query',
+      '#server-address-resolve-dns-ip: 77.88.8.8',
+      '',
+    ]
+    return new NextResponse(Buffer.from(happMeta.concat(configs).join('\n') + '\n').toString('base64'), {
+      headers: { 'content-type': 'text/plain; charset=utf-8', ...buildSubscriptionHeaders(userinfo, profileTitle, `${profileTitle}.txt`) }
     })
   } catch (error) {
+    console.error('Subscription API Error:', error)
     return new Response('Internal Server Error', { status: 500 })
   }
 }

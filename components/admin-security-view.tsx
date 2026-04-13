@@ -69,7 +69,7 @@ export function AdminSecurityView({ onNavigate }: AdminSecurityViewProps) {
   const totalThreats = Object.values(data?.summary || {}).reduce((a, b) => a + b, 0)
 
   return (
-    <div className="flex min-h-screen flex-col bg-background p-4 pb-24">
+    <div className="app-screen-shell flex min-h-screen flex-col p-4 pb-24">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">

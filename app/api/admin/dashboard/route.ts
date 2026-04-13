@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { getStartOfAppDay } from '@/lib/day-boundary'
 import { readLocationDiagnosticsCache } from '@/lib/location-diagnostics'
+import { readLocationTrafficAccounting } from '@/lib/location-traffic-accounting'
+import { getPaymentProviderId, getPaymentProviderLabel, SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/payments'
 
 export const dynamic = 'force-dynamic'
 
 function startOfToday() {
-  const d = new Date()
-  d.setHours(0, 0, 0, 0)
-  return d
+  return getStartOfAppDay()
 }
 
 export async function GET() {
@@ -30,23 +31,24 @@ export async function GET() {
       prisma.subscription.groupBy({
         by: ['planId'],
         where: { status: 'active', expiresAt: { gt: new Date() } },
-        _count: { _all: true },
-        orderBy: { _count: { _all: 'desc' } },
+        _count: { planId: true },
+        orderBy: { _count: { planId: 'desc' } },
       }) as any,
       prisma.payment.findMany({
-        where: { status: { in: ['paid', 'completed'] }, createdAt: { gte: sevenDaysAgo } },
+        where: { status: { in: SUCCESSFUL_PAYMENT_STATUSES as any }, createdAt: { gte: sevenDaysAgo } },
         orderBy: { createdAt: 'desc' },
         take: 10,
         select: {
           id: true,
           userId: true,
           planId: true,
-          months: true,
-          amount: true,
-          status: true,
-          createdAt: true,
-          user: { select: { username: true, firstName: true, lastName: true, telegramId: true } } as any,
-        } as any,
+        months: true,
+        amount: true,
+        status: true,
+        externalId: true,
+        createdAt: true,
+        user: { select: { username: true, firstName: true, lastName: true, telegramId: true } } as any,
+      } as any,
       }) as any,
     ])
 
@@ -82,16 +84,20 @@ export async function GET() {
 
     const activeByPlan = (activeByPlanRaw || []).map((r: any) => ({
       planId: r.planId,
-      count: Number(r._count?._all || 0),
+      count: Number(r._count?.planId || 0),
     }))
 
     // Add a small node “tops” from diagnostics cache (cheap, no DB)
     const diagnostics = readLocationDiagnosticsCache()
+    const locationTraffic = readLocationTrafficAccounting()
     const byLoc = diagnostics.locations || {}
+    const trafficByLoc = locationTraffic?.locations || {}
     const nodeTopToday = Object.entries(byLoc)
       .map(([id, snap]: any) => ({
         id,
-        bytes: Number(snap?.vpnTraffic?.todayBytes || 0),
+        bytes: trafficByLoc[id]
+          ? Number(trafficByLoc[id].todayBytes || 0)
+          : Number(snap?.vpnTraffic?.todayBytes || 0),
         iperf: Number(snap?.iperf?.senderMbps || 0),
         ping: Number(snap?.pingTarget?.avgMs ?? snap?.mtr?.avgMs ?? 0),
         checkedAt: snap?.checkedAt || null,
@@ -107,6 +113,8 @@ export async function GET() {
         amount: Number(p.amount || 0),
         planId: p.planId,
         months: p.months,
+        providerId: getPaymentProviderId(p.externalId),
+        providerLabel: getPaymentProviderLabel(getPaymentProviderId(p.externalId)),
         createdAt: p.createdAt,
         user: {
           telegramId: p.user?.telegramId ? String(p.user.telegramId) : null,
@@ -124,4 +132,3 @@ export async function GET() {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
-

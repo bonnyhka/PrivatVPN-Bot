@@ -43,14 +43,14 @@ export const PLANS: Plan[] = [
     periodMonths: 1,
     features: [
       '5 устройств',
-      'Все локации: Германия и Нидерланды',
+      'Все локации: Германия, Нидерланды и Финляндия',
       'До 500 Мбит/с',
-      'Безлимитный трафик',
+      '500 ГБ трафика',
     ],
     badge: 'MAX',
     devicesCount: 5,
     speedLabel: '500 Мбит/с',
-    trafficLimit: Number.MAX_SAFE_INTEGER,
+    trafficLimit: 500 * 1024 * 1024 * 1024,
   },
   {
     id: 'citadel',
@@ -60,7 +60,7 @@ export const PLANS: Plan[] = [
     periodMonths: 1,
     features: [
       '10 устройств',
-      'Все локации: Германия и Нидерланды',
+      'Все локации: Германия, Нидерланды и Финляндия',
       'До 1 Гбит/с',
       'Безлимитный трафик',
     ],

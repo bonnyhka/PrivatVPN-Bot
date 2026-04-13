@@ -70,7 +70,7 @@ export function ConnectView({ user, onNavigate }: ConnectViewProps) {
   }
 
   return (
-    <div className="min-h-screen px-4 pb-24 pt-6 bg-background">
+    <div className="app-screen-shell min-h-screen px-4 pb-24 pt-6">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <button 

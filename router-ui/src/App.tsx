@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Layout } from './components/Layout'
 import { Wifi, ShieldAlert, CheckCircle2, RefreshCw, Power, Globe, Activity, Lock, User, Eye, EyeOff, Clock, RotateCcw, ShieldX, Server, Laptop, Smartphone, Monitor, Cpu, Database, Ban, ShieldCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ubus } from './lib/ubus'
 
 // Mock data for development
 const MOCK_WIFI = {
@@ -374,13 +375,32 @@ function VPN() {
 }
 
 function Overview() {
-  const [uptime, setUptime] = useState(0);
+  const [uptimeSec, setUptimeSec] = useState<number | null>(null);
   const [cpu, setCpu] = useState(12);
   const [ram, setRam] = useState(48);
 
   useEffect(() => {
-    const i = setInterval(() => setUptime(u => u + 1), 60000)
-    return () => clearInterval(i)
+    let isActive = true
+
+    const loadSystemInfo = async () => {
+      try {
+        const info = await ubus.call<{ uptime?: number }>('system', 'info')
+        if (!isActive) return
+        const nextUptime = Number(info?.uptime || 0)
+        setUptimeSec(Number.isFinite(nextUptime) && nextUptime > 0 ? nextUptime : null)
+      } catch {
+        if (!isActive) return
+        setUptimeSec(null)
+      }
+    }
+
+    loadSystemInfo()
+    const interval = setInterval(loadSystemInfo, 30000)
+
+    return () => {
+      isActive = false
+      clearInterval(interval)
+    }
   }, [])
 
   useEffect(() => {
@@ -390,6 +410,18 @@ function Overview() {
     }, 2000)
     return () => clearInterval(t)
   }, [])
+
+  const formatSystemUptime = (value: number | null) => {
+    if (!value || !Number.isFinite(value) || value <= 0) return 'нет данных'
+    const days = Math.floor(value / 86400)
+    const hours = Math.floor((value % 86400) / 3600)
+    const minutes = Math.floor((value % 3600) / 60)
+
+    if (days > 0) return hours > 0 ? `${days} д ${hours} ч` : `${days} д`
+    if (hours > 0) return minutes > 0 ? `${hours} ч ${minutes} м` : `${hours} ч`
+    if (minutes > 0) return `${minutes} м`
+    return '<1 м'
+  }
 
   return (
     <div className="space-y-6">
@@ -419,7 +451,7 @@ function Overview() {
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1 text-center">Аптайм системы</p>
           <div className="flex flex-col items-center justify-center py-4 text-foreground">
             <Clock className="h-10 w-10 mb-2 opacity-30 text-muted-foreground" />
-            <span className="text-base font-black">12 дн {4 + Math.floor(uptime/60)} ч {32 + (uptime%60)} м</span>
+            <span className="text-base font-black">{formatSystemUptime(uptimeSec)}</span>
           </div>
         </div>
       </div>

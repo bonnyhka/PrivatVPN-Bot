@@ -1,35 +1,47 @@
-# PrivatVPN-Bot-Redesign
+# PrivatVPN Infrastructure & Bot
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [v0](https://v0.app).
+A robust, enterprise-grade VPN platform built with Next.js, Prisma, and the Telegram platform. It integrates advanced anti-DPI methods and proxy protocols to ensure connectivity under restrictive network conditions.
 
-## Built with v0
+## 🏗 System Architecture
 
-This repository is linked to a [v0](https://v0.app) project. You can continue developing by visiting the link below -- start new chats to make changes, and v0 will push commits directly to this repo. Every merge to `main` will automatically deploy.
+The core system consists of multiple micro-processes managed by PM2, utilizing a unified Prisma PostgreSQL database:
+1. **Web App (Next.js)**: Admin dashboard, dynamic subscription API generation (`/api/sub/[id]`), and billing interfaces.
+2. **Telegram Bot**: User onboarding, node selection, support wizards, and automated lifecycle notifications.
+3. **Cron Scripts**: Traffic resetting, statistical syncing, node expiration tracking, and health monitoring.
 
-[Continue working on v0 →](https://v0.app/chat/projects/prj_N94clxgBCUesJE4fr9Gqe64Mp8jz)
+## 🛡️ Anti-DPI & Network Optimizations
 
-## Getting Started
+We employ advanced, multi-layered strategies to bypass Deep Packet Inspection (DPI) and improve latency:
 
-First, run the development server:
+- **Protocols Supported**:
+  - `VLESS + REALITY` (Primary): Configured with `www.apple.com` SNI. `xtls-rprx-vision` flow is enabled globally to prevent active probing, but specifically **disabled for Netherlands** due to provider compatibility issues.
+  - `Shadowsocks (aes-256-gcm)` (Secondary): Reliable fallback.
+  - `Hysteria2` (Speed): QUIC-based protocol targeting congested/throttled networks.
 
+- **Auto-Failover**:
+  - The subscription API injects a `urltest` outbound group ("⚡ Авто") as the primary route in sing-box clients, pinging all available protocols every 3 minutes.
+
+- **Gaming & Whitelist Bypass (Split-tunneling)**:
+  - Direct routing injected for core Russian networks (GosUslugi, Yandex, Banks) to alleviate VPN load.
+  - Gaming platforms (Steam, Valve IPs `162.254.0.0/16`, Epic Games) bypass the VPN entirely to ensure 0 added latency.
+  - Cloudflare Resolver (`1.1.1.1`) is uniquely routed directly for non-blocked queries.
+
+## 🔄 Automated Protocol Monitoring
+
+**Health Checks (`scripts/check-servers.ts`)**:
+To accurately determine if firewalls are blocking handshakes (and not just TCP ports), the custom health monitor executes a full headless `sing-box` connection via a SOCKS5 proxy pipe. It independently verifies VLESS, Shadowsocks, and Hysteria2 every 10 minutes.
+
+**Incident Response**:
+- **Admin Alert**: Immediate Telegram notification generated upon complete server failure.
+- **User Broadcast**: If a server experiences 2 consecutive hard failures, the bot broadcasts an automatic failover instruction ("Зафиксированы сбои...") to affected active users. These messages **auto-delete after 5 minutes** to prevent chat clutter.
+
+## 🚀 Deployment Operations
+
+Use PM2 for zero-downtime restarts and management:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
+# Build the UI and API
+npm run build
+
+# Restart standard services
+pm2 restart web-app check-servers
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-## Learn More
-
-To learn more, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [v0 Documentation](https://v0.app/docs) - learn about v0 and how to use it.
-
-<a href="https://v0.app/chat/api/kiro/clone/bonnyhka/PrivatVPN-Bot-Redesign" alt="Open in Kiro"><img src="https://pdgvvgmkdvyeydso.public.blob.vercel-storage.com/open%20in%20kiro.svg?sanitize=true" /></a>

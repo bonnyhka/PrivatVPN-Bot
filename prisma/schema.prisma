@@ -156,7 +156,7 @@ model Location {
   isActive               Boolean   @default(true)
   ssPort                 Int?
   ssPassword             String?
-  ssMethod               String?   @default("chacha20-ietf-poly1305")
+  ssMethod               String?   @default("aes-256-gcm")
   vlessUuid              String?
   vlessPort              Int?
   vlessNetwork           String?   @default("tcp")
@@ -170,6 +170,7 @@ model Location {
   sshPass                String?
   sshUser                String?
   vlessRealityPrivateKey String?
+  hysteriaPort           Int?
 }
 
 model Ticket {
@@ -262,6 +263,7 @@ model Payment {
   planId           String
   months           Int      @default(1)
   amount           Float
+  balanceUsed      Float    @default(0)
   status           String   @default("pending")
   isGift           Boolean  @default(false)
   isPreOrder       Boolean  @default(false)

@@ -1,0 +1,408 @@
+{
+  "day": "2026-04-12",
+  "updatedAt": "2026-04-13T07:37:00.552Z",
+  "locations": {
+    "germany1": {
+      "todayBytes": "1330424311",
+      "lastCycleBytes": 0,
+      "updatedAt": "2026-04-11T20:45:13.926Z",
+      "history": [
+        {
+          "timestamp": "2026-04-10T21:00:00.000Z",
+          "bytes": 974174180,
+          "totalBytes": 974174180
+        },
+        {
+          "timestamp": "2026-04-10T22:00:00.000Z",
+          "bytes": 679923805,
+          "totalBytes": 1654097985
+        },
+        {
+          "timestamp": "2026-04-10T23:00:00.000Z",
+          "bytes": 104342444,
+          "totalBytes": 1758440429
+        },
+        {
+          "timestamp": "2026-04-11T00:00:00.000Z",
+          "bytes": 415677,
+          "totalBytes": 1758856106
+        },
+        {
+          "timestamp": "2026-04-11T01:00:00.000Z",
+          "bytes": 841139,
+          "totalBytes": 1759697245
+        },
+        {
+          "timestamp": "2026-04-11T02:00:00.000Z",
+          "bytes": 446081,
+          "totalBytes": 1760143326
+        },
+        {
+          "timestamp": "2026-04-11T03:00:00.000Z",
+          "bytes": 510686,
+          "totalBytes": 1760654012
+        },
+        {
+          "timestamp": "2026-04-11T04:00:00.000Z",
+          "bytes": 574425,
+          "totalBytes": 1761228437
+        },
+        {
+          "timestamp": "2026-04-11T05:00:00.000Z",
+          "bytes": 234329477,
+          "totalBytes": 1995557914
+        },
+        {
+          "timestamp": "2026-04-11T06:00:00.000Z",
+          "bytes": 185,
+          "totalBytes": 1995558099
+        },
+        {
+          "timestamp": "2026-04-11T07:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 1995558099
+        },
+        {
+          "timestamp": "2026-04-11T08:00:00.000Z",
+          "bytes": 22514524,
+          "totalBytes": 2018072623
+        },
+        {
+          "timestamp": "2026-04-11T09:00:00.000Z",
+          "bytes": 33732673,
+          "totalBytes": 2051805296
+        },
+        {
+          "timestamp": "2026-04-11T10:00:00.000Z",
+          "bytes": 124713120,
+          "totalBytes": 2176518416
+        },
+        {
+          "timestamp": "2026-04-11T11:00:00.000Z",
+          "bytes": 94645815,
+          "totalBytes": 2271164231
+        },
+        {
+          "timestamp": "2026-04-11T12:00:00.000Z",
+          "bytes": 48149254,
+          "totalBytes": 2319313485
+        },
+        {
+          "timestamp": "2026-04-11T13:00:00.000Z",
+          "bytes": 57220935,
+          "totalBytes": 2376534420
+        },
+        {
+          "timestamp": "2026-04-11T14:00:00.000Z",
+          "bytes": 163679882,
+          "totalBytes": 2540214302
+        },
+        {
+          "timestamp": "2026-04-11T15:00:00.000Z",
+          "bytes": 758467362,
+          "totalBytes": 3298681664
+        },
+        {
+          "timestamp": "2026-04-11T16:00:00.000Z",
+          "bytes": 308681266,
+          "totalBytes": 3607362930
+        },
+        {
+          "timestamp": "2026-04-11T17:00:00.000Z",
+          "bytes": 28071955,
+          "totalBytes": 3635434885
+        },
+        {
+          "timestamp": "2026-04-11T18:00:00.000Z",
+          "bytes": 145699294,
+          "totalBytes": 3781134179
+        },
+        {
+          "timestamp": "2026-04-11T19:00:00.000Z",
+          "bytes": 41220129,
+          "totalBytes": 3822354308
+        },
+        {
+          "timestamp": "2026-04-11T20:00:00.000Z",
+          "bytes": 248325564,
+          "totalBytes": 4070679872
+        }
+      ],
+      "vpnTraffic": {
+        "todayBytes": "1330424311",
+        "totalBytes": "88568264085"
+      },
+      "totalBytes": "88568264085",
+      "rawBytes": "0",
+      "userTrafficCache": {}
+    },
+    "netherlands1": {
+      "todayBytes": "284329803",
+      "lastCycleBytes": 0,
+      "updatedAt": "2026-04-11T20:45:13.926Z",
+      "history": [
+        {
+          "timestamp": "2026-04-10T21:00:00.000Z",
+          "bytes": 142993238,
+          "totalBytes": 142993238
+        },
+        {
+          "timestamp": "2026-04-10T22:00:00.000Z",
+          "bytes": 554477746,
+          "totalBytes": 697470984
+        },
+        {
+          "timestamp": "2026-04-10T23:00:00.000Z",
+          "bytes": 443006807,
+          "totalBytes": 1140477791
+        },
+        {
+          "timestamp": "2026-04-11T00:00:00.000Z",
+          "bytes": 500594355,
+          "totalBytes": 1641072146
+        },
+        {
+          "timestamp": "2026-04-11T01:00:00.000Z",
+          "bytes": 83998495,
+          "totalBytes": 1725070641
+        },
+        {
+          "timestamp": "2026-04-11T02:00:00.000Z",
+          "bytes": 1957030,
+          "totalBytes": 1727027671
+        },
+        {
+          "timestamp": "2026-04-11T03:00:00.000Z",
+          "bytes": 51450512,
+          "totalBytes": 1778478183
+        },
+        {
+          "timestamp": "2026-04-11T04:00:00.000Z",
+          "bytes": 1730110,
+          "totalBytes": 1780208293
+        },
+        {
+          "timestamp": "2026-04-11T05:00:00.000Z",
+          "bytes": 14545787,
+          "totalBytes": 1794754080
+        },
+        {
+          "timestamp": "2026-04-11T06:00:00.000Z",
+          "bytes": 92541467,
+          "totalBytes": 1887295547
+        },
+        {
+          "timestamp": "2026-04-11T07:00:00.000Z",
+          "bytes": 370507658,
+          "totalBytes": 2257803205
+        },
+        {
+          "timestamp": "2026-04-11T08:00:00.000Z",
+          "bytes": 151950231,
+          "totalBytes": 2409753436
+        },
+        {
+          "timestamp": "2026-04-11T09:00:00.000Z",
+          "bytes": 148465520,
+          "totalBytes": 2558218956
+        },
+        {
+          "timestamp": "2026-04-11T10:00:00.000Z",
+          "bytes": 754218987,
+          "totalBytes": 3312437943
+        },
+        {
+          "timestamp": "2026-04-11T11:00:00.000Z",
+          "bytes": 300927460,
+          "totalBytes": 3613365403
+        },
+        {
+          "timestamp": "2026-04-11T12:00:00.000Z",
+          "bytes": 229592651,
+          "totalBytes": 3842958054
+        },
+        {
+          "timestamp": "2026-04-11T13:00:00.000Z",
+          "bytes": 420380205,
+          "totalBytes": 4263338259
+        },
+        {
+          "timestamp": "2026-04-11T14:00:00.000Z",
+          "bytes": 344312194,
+          "totalBytes": 4607650453
+        },
+        {
+          "timestamp": "2026-04-11T15:00:00.000Z",
+          "bytes": 779859579,
+          "totalBytes": 5387510032
+        },
+        {
+          "timestamp": "2026-04-11T16:00:00.000Z",
+          "bytes": 128409253,
+          "totalBytes": 5515919285
+        },
+        {
+          "timestamp": "2026-04-11T17:00:00.000Z",
+          "bytes": 398594112,
+          "totalBytes": 5914513397
+        },
+        {
+          "timestamp": "2026-04-11T18:00:00.000Z",
+          "bytes": 602675711,
+          "totalBytes": 6517189108
+        },
+        {
+          "timestamp": "2026-04-11T19:00:00.000Z",
+          "bytes": 356380448,
+          "totalBytes": 6873569556
+        },
+        {
+          "timestamp": "2026-04-11T20:00:00.000Z",
+          "bytes": 382148467,
+          "totalBytes": 7255718023
+        }
+      ],
+      "vpnTraffic": {
+        "todayBytes": "284329803",
+        "totalBytes": "114887458464"
+      },
+      "totalBytes": "114887458464",
+      "rawBytes": "0",
+      "userTrafficCache": {}
+    },
+    "cmntcblz500021ichzmf6ilyp": {
+      "todayBytes": "101211852",
+      "lastCycleBytes": 0,
+      "updatedAt": "2026-04-11T20:45:13.926Z",
+      "history": [
+        {
+          "timestamp": "2026-04-10T21:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-10T22:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-10T23:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-11T00:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-11T01:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-11T02:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-11T03:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-11T04:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-11T05:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-11T06:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-11T07:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-11T08:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-11T09:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-11T10:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-11T11:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-11T12:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-11T13:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-11T14:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-11T15:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-11T16:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-11T17:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-11T18:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-11T19:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        },
+        {
+          "timestamp": "2026-04-11T20:00:00.000Z",
+          "bytes": 0,
+          "totalBytes": 0
+        }
+      ],
+      "vpnTraffic": {
+        "todayBytes": "101211852",
+        "totalBytes": "1280637836"
+      },
+      "totalBytes": "1280637836",
+      "rawBytes": "0",
+      "userTrafficCache": {}
+    }
+  }
+}

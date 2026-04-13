@@ -9,6 +9,7 @@ import {
   AreaChart, Area, LineChart, Line, Tooltip, ResponsiveContainer, YAxis
 } from 'recharts'
 import type { AppView } from '@/lib/types'
+import { getStartOfAppDay, getStartOfAppHour } from '@/lib/day-boundary'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
@@ -60,6 +61,22 @@ function getDisplayDiagnosticPing(loc: any) {
   return typeof loc?.ping === 'number' ? loc.ping : 0
 }
 
+function getLatencyTargetLabel(loc: any) {
+  return loc?.diagnostics?.pingTargetLabel || loc?.diagnostics?.targetLabel || '--'
+}
+
+function getLatencyTargetHost(loc: any) {
+  return loc?.diagnostics?.pingTargetHost || loc?.diagnostics?.targetHost || '--'
+}
+
+function getBandwidthTargetLabel(loc: any) {
+  return loc?.diagnostics?.bandwidthTargetLabel || loc?.diagnostics?.targetLabel || '--'
+}
+
+function getBandwidthTargetHost(loc: any) {
+  return loc?.diagnostics?.bandwidthTargetHost || loc?.diagnostics?.targetHost || '--'
+}
+
 function formatBytes(value: number | null | undefined) {
   if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
@@ -70,6 +87,13 @@ function formatBytes(value: number | null | undefined) {
     index += 1
   }
   return `${size.toFixed(size >= 100 || index === 0 ? 0 : 1)} ${units[index]}`
+}
+
+function formatLiveSpeedRate(value: number | null | undefined) {
+  const mbps = Number(value || 0)
+  if (!Number.isFinite(mbps) || mbps <= 0) return '0 КБ/с'
+  if (mbps < 0.01) return `${(mbps * 1024).toFixed(1)} КБ/с`
+  return `${mbps.toFixed(2)} МБ/с`
 }
 
 function getChartDomainMax(dataMax: number) {
@@ -92,9 +116,7 @@ function formatTrafficCheckedAt(value?: string | null) {
 }
 
 function getCurrentHourStart() {
-  const now = new Date()
-  now.setMinutes(0, 0, 0)
-  return now.getTime()
+  return getStartOfAppHour().getTime()
 }
 
 function getCompletedHourlyHistory(history?: Array<{ timestamp: string; bytes: number; totalBytes?: number }>) {
@@ -110,15 +132,22 @@ function getCompletedHourlyHistory(history?: Array<{ timestamp: string; bytes: n
 
 function getNodeTodayTrafficFromHistory(history?: Array<{ timestamp: string; bytes: number }>) {
   const completed = getCompletedHourlyHistory(history)
-  const startOfDay = new Date()
-  startOfDay.setHours(0, 0, 0, 0)
-  const startOfDayTs = startOfDay.getTime()
+  const startOfDayTs = getStartOfAppDay().getTime()
 
   return completed.reduce((total, entry) => {
     const ts = new Date(entry.timestamp).getTime()
     if (!Number.isFinite(ts) || ts < startOfDayTs) return total
     return total + Number(entry.bytes || 0)
   }, 0)
+}
+
+function getNodeTodayTraffic(loc: any, history?: Array<{ timestamp: string; bytes: number }>) {
+  if (loc?.diagnostics?.accountedTraffic) {
+    return Number(loc.diagnostics.accountedTraffic.todayBytes || 0)
+  }
+  const todayBytes = Number(loc?.diagnostics?.vpnTraffic?.todayBytes || 0)
+  if (todayBytes > 0) return todayBytes
+  return getNodeTodayTrafficFromHistory(history)
 }
 
 function getRecentNetworkHistory(
@@ -313,11 +342,13 @@ export function AdminInfoView({ onNavigate }: AdminInfoViewProps) {
         </h2>
         <div className="flex flex-col gap-3">
           {locations.map((loc) => {
-            const rawNodeTrafficHistory = Array.isArray(loc.diagnostics?.vpnTraffic?.history)
-              ? loc.diagnostics.vpnTraffic.history
+            const rawNodeTrafficHistory = Array.isArray(loc.diagnostics?.accountedTraffic?.history)
+              ? loc.diagnostics.accountedTraffic.history
+              : Array.isArray(loc.diagnostics?.vpnTraffic?.history)
+                ? loc.diagnostics.vpnTraffic.history
               : []
             const nodeTrafficHistory = getCompletedHourlyHistory(rawNodeTrafficHistory)
-            const nodeTodayTraffic = getNodeTodayTrafficFromHistory(rawNodeTrafficHistory)
+            const nodeTodayTraffic = getNodeTodayTraffic(loc, rawNodeTrafficHistory)
             const networkHistory = getRecentNetworkHistory(loc.diagnostics?.networkHistory)
             const latestNetworkPoint = networkHistory[networkHistory.length - 1]
             return (
@@ -482,10 +513,10 @@ export function AdminInfoView({ onNavigate }: AdminInfoViewProps) {
                     </div>
                     <p className="mt-1 text-[10px] font-mono text-muted-foreground">{loc.host}</p>
                     <p className="mt-1 text-[10px] text-primary/80">
-                      Замер до {loc.diagnostics?.targetLabel || '--'} • {formatDiagnosticsAge(loc.diagnostics?.checkedAt)}
+                      Пинг: {getLatencyTargetLabel(loc)} • Скорость: {getBandwidthTargetLabel(loc)} • {formatDiagnosticsAge(loc.diagnostics?.checkedAt)}
                     </p>
                     <p className="mt-0.5 text-[10px] font-mono text-muted-foreground/80">
-                      Цель: {loc.diagnostics?.targetHost || '--'}
+                      Цели: {getLatencyTargetHost(loc)} • {getBandwidthTargetHost(loc)}
                     </p>
                   </div>
                 </div>
@@ -513,8 +544,8 @@ export function AdminInfoView({ onNavigate }: AdminInfoViewProps) {
                 <div className="flex items-center justify-between">
                   <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Раздача узла (live)</p>
                   <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-bold text-sky-400">RX {nodeLiveSpeed.rx.toFixed(2)} МБ/с</span>
-                    <span className="text-[10px] font-bold text-cyan-400">TX {nodeLiveSpeed.tx.toFixed(2)} МБ/с</span>
+                    <span className="text-[10px] font-bold text-sky-400">RX {formatLiveSpeedRate(nodeLiveSpeed.rx)}</span>
+                    <span className="text-[10px] font-bold text-cyan-400">TX {formatLiveSpeedRate(nodeLiveSpeed.tx)}</span>
                   </div>
                 </div>
               </div>
@@ -538,7 +569,7 @@ export function AdminInfoView({ onNavigate }: AdminInfoViewProps) {
                           {formatMetricNumber(loc.diagnostics?.iperf?.senderMbps, ' Мбит/с')}
                         </p>
                         <p className="mt-0.5 text-[9px] text-muted-foreground">
-                          ретраи {formatMetricNumber(loc.diagnostics?.iperf?.retransmits)}
+                          цель {getBandwidthTargetLabel(loc)} • ретраи {formatMetricNumber(loc.diagnostics?.iperf?.retransmits)}
                         </p>
                       </div>
 
@@ -548,7 +579,7 @@ export function AdminInfoView({ onNavigate }: AdminInfoViewProps) {
                           {formatMetricNumber(loc.diagnostics?.iperf?.receiverMbps, ' Мбит/с')}
                         </p>
                         <p className="mt-0.5 text-[9px] text-muted-foreground">
-                          цель {loc.diagnostics?.targetLabel || '--'}
+                          цель {getBandwidthTargetLabel(loc)}
                         </p>
                       </div>
 
@@ -558,7 +589,7 @@ export function AdminInfoView({ onNavigate }: AdminInfoViewProps) {
                           {formatMetricNumber(loc.diagnostics?.pingTarget?.lossPct, '%')}
                         </p>
                         <p className="mt-0.5 text-[9px] text-muted-foreground">
-                          ping до {loc.diagnostics?.targetLabel || '--'} {formatMetricNumber(loc.diagnostics?.pingTarget?.avgMs, ' мс')}
+                          ping до {getLatencyTargetLabel(loc)} {formatMetricNumber(loc.diagnostics?.pingTarget?.avgMs, ' мс')}
                         </p>
                       </div>
 
@@ -575,13 +606,13 @@ export function AdminInfoView({ onNavigate }: AdminInfoViewProps) {
 
                     <div className="mt-2 flex flex-wrap gap-1.5 text-[9px] text-muted-foreground">
                       <span className="rounded-full border border-border bg-card/60 px-2 py-1">
-                        ping до {loc.diagnostics?.targetLabel || '--'} {formatMetricNumber(loc.diagnostics?.pingTarget?.avgMs, ' мс')}
+                        ping до {getLatencyTargetLabel(loc)} {formatMetricNumber(loc.diagnostics?.pingTarget?.avgMs, ' мс')}
                       </span>
                       <span className="rounded-full border border-border bg-card/60 px-2 py-1">
                         MTR loss {formatMetricNumber(loc.diagnostics?.mtr?.lossPct, '%')}
                       </span>
                       <span className="rounded-full border border-border bg-card/60 px-2 py-1">
-                        цель {loc.diagnostics?.targetLabel || '--'}
+                        скорость {getBandwidthTargetLabel(loc)}
                       </span>
                     </div>
                   </>

@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ArrowLeft, CreditCard, Smartphone, Wallet, CheckCircle2, Loader2, Copy, Check } from 'lucide-react'
-import { Shield, Star, Crown, Info, FileText, ChevronRight } from 'lucide-react'
+import { ArrowLeft, CreditCard, CheckCircle2, Loader2, Copy, Check, Sparkles, Wallet } from 'lucide-react'
 import type { Plan, AppView } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { Tag, Sparkles, Gift, Users } from 'lucide-react'
+import { applySystemDiscount, getPlanBasePrice, getSystemDiscountRate } from '@/lib/payments'
+import { miniAppToast } from '@/lib/miniapp-toast'
 
 interface PaymentViewProps {
   plan: Plan | null
@@ -14,27 +14,30 @@ interface PaymentViewProps {
   onNavigate: (view: AppView) => void
 }
 
-type PaymentMethod = 'yoomoney'
+type PaymentMethod = 'crystalpay' | 'heleket'
 type PaymentStep = 'method' | 'processing' | 'success'
 
-const PAYMENT_METHODS: { id: PaymentMethod; label: string; icon?: typeof CreditCard; image?: string; description: string }[] = [
-  { id: 'yoomoney', label: 'ЮMoney', image: '/images/yoomoney.png', description: 'Платежная страница' },
+const PAYMENT_METHODS: { id: PaymentMethod; label: string; checkoutLabel: string; icon?: typeof CreditCard; image?: string }[] = [
+  { id: 'crystalpay', label: 'CrystalPay (СБП)', checkoutLabel: 'CrystalPay', image: '/images/crystalpay.png' },
+  { id: 'heleket', label: 'Heleket (Крипта)', checkoutLabel: 'Heleket', image: '/images/heleket.png' },
 ]
 
 export function PaymentView({ user, plan, isGift, setIsGift, onNavigate }: { user: any, plan: Plan | null, isGift: boolean, setIsGift: (v: boolean) => void, onNavigate: (v: AppView) => void }) {
-  const [method, setMethod] = useState<PaymentMethod | null>('yoomoney')
+  const [method, setMethod] = useState<PaymentMethod | null>('crystalpay')
   const [step, setStep] = useState<PaymentStep>('method')
   const [months, setMonths] = useState<number>(1)
   const [copied, setCopied] = useState(false)
   const [promoCode, setPromoCode] = useState('')
   const [appliedPromo, setAppliedPromo] = useState<any | null>(null)
   const [autoPromo, setAutoPromo] = useState<any | null>(null)
-  const [promoError, setPromoError] = useState<string | null>(null)
   const [isValidating, setIsValidating] = useState(false)
   const [receiverUsername, setReceiverUsername] = useState('')
   const [isPreOrder, setIsPreOrder] = useState(false)
   const [recipientInfo, setRecipientInfo] = useState<{ found: boolean, level: number, currentPlanId: string | null } | null>(null)
   const [isCheckingRecipient, setIsCheckingRecipient] = useState(false)
+  const [useBalance, setUseBalance] = useState(false)
+  const selectedMethodLabel = PAYMENT_METHODS.find((item) => item.id === method)?.checkoutLabel || 'платежа'
+  const availableBalance = Math.max(0, Math.floor(Number(user?.balance || 0)))
 
   // Check recipient plan level
   useEffect(() => {
@@ -86,6 +89,12 @@ export function PaymentView({ user, plan, isGift, setIsGift, onNavigate }: { use
     }
   }, [plan?.id, months, isGift])
 
+  useEffect(() => {
+    if (availableBalance <= 0) {
+      setUseBalance(false)
+    }
+  }, [availableBalance])
+
   if (!plan) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
@@ -103,48 +112,84 @@ export function PaymentView({ user, plan, isGift, setIsGift, onNavigate }: { use
   const handleApplyPromo = async () => {
     if (!promoCode || !plan) return
     setIsValidating(true)
-    setPromoError(null)
     try {
       const res = await fetch(`/api/promos/validate?code=${encodeURIComponent(promoCode.trim())}&planId=${encodeURIComponent(plan.id)}&months=${months}&isGift=${isGift ? '1' : '0'}`)
       const data = await res.json()
       if (data.promo) {
         setAppliedPromo(data.promo)
-        setPromoError(null)
+        miniAppToast.success('Промокод применён')
       } else {
-        setPromoError(data.error || 'Ошибка проверки')
+        miniAppToast.error(data.error || 'Ошибка проверки')
       }
     } catch (e) {
-      setPromoError('Сервис недоступен')
+      miniAppToast.error('Сервис недоступен')
     }
     setIsValidating(false)
   }
 
-  const basePrice = plan.price * months
+  const basePrice = getPlanBasePrice(plan.id, plan.price, months)
   
   // Phase 6 Discount Logic
-  let systemDiscount = 0
-  let discountLabel = ''
-  
-  if (isGift) {
-    systemDiscount = 0.15 // 15% for gifts
-    discountLabel = 'Скидка на подарок 15%'
-  } else if (months >= 3) {
-    systemDiscount = 0.10 // 10% for 3+ months
-    discountLabel = 'Оптом дешевле: -10%'
-  }
+  const systemDiscount = getSystemDiscountRate(months, isGift)
 
-  const priceAfterSystemDiscount = Math.floor(basePrice * (1 - systemDiscount))
+  const priceAfterSystemDiscount = applySystemDiscount(basePrice, months, isGift)
   const activePromo = appliedPromo || autoPromo
   const finalPrice = activePromo
     ? (activePromo.type === 'percent'
         ? Math.floor(priceAfterSystemDiscount * (1 - activePromo.value / 100))
         : Math.max(0, priceAfterSystemDiscount - activePromo.value))
     : priceAfterSystemDiscount
+  const balanceToApply = useBalance ? Math.min(availableBalance, finalPrice) : 0
+  const payablePrice = Math.max(0, finalPrice - balanceToApply)
+  const recipientUsername = receiverUsername.trim()
+  const isRecipientMissing = isGift && recipientUsername.length < 3
+  const isRecipientChecking = isGift && recipientUsername.length >= 3 && isCheckingRecipient
+  const isRecipientUnknown = isGift && recipientUsername.length >= 3 && !isCheckingRecipient && recipientInfo?.found === false
 
   const handlePay = async () => {
-    if (!method || !plan) return
+    const requiresMethod = payablePrice > 0
+
+    if ((!method && requiresMethod) || !plan) {
+      miniAppToast.info('Выберите способ оплаты')
+      return
+    }
+
+    const plansList = ['scout', 'guardian', 'fortress', 'citadel']
+    const isActiveForSelf = user?.subscription?.status === 'active' && !isGift
+    const currentLevel = isActiveForSelf ? plansList.indexOf(user.subscription.planId) : -1
+    const selectedLevel = plansList.indexOf(plan.id)
+
+    if (isActiveForSelf && selectedLevel < currentLevel) {
+      miniAppToast.info('Понижение тарифа недоступно')
+      return
+    }
+
+    if (isActiveForSelf && selectedLevel === currentLevel) {
+      miniAppToast.info('У вас уже подключен этот тариф')
+      return
+    }
+
+    if (isRecipientMissing) {
+      miniAppToast.error('Укажите username получателя')
+      return
+    }
+
+    if (isRecipientChecking) {
+      miniAppToast.info('Проверяем username получателя')
+      return
+    }
+
+    if (isRecipientUnknown) {
+      miniAppToast.error('Пользователь с таким username не найден')
+      return
+    }
+
+    if (isGift && recipientInfo?.found && recipientInfo.level >= selectedLevel && !isPreOrder) {
+      miniAppToast.info('У получателя уже есть такой тариф')
+      return
+    }
+
     setStep('processing')
-    setPromoError(null)
     
     try {
       const res = await fetch('/api/sub/checkout', {
@@ -157,13 +202,14 @@ export function PaymentView({ user, plan, isGift, setIsGift, onNavigate }: { use
           months,
           isGift,
           isPreOrder,
-          receiverUsername: isGift ? receiverUsername.trim() : null
+          receiverUsername: isGift ? receiverUsername.trim() : null,
+          useBalance,
         })
       })
       const data = await res.json()
       
       if (data.success && data.paymentUrl) {
-        // Redirect to YooMoney
+        // Redirect to CrystalPay
         window.location.href = data.paymentUrl
       } else if (data.success && data.subscription) {
         // Fallback for immediate success if enabled
@@ -171,11 +217,11 @@ export function PaymentView({ user, plan, isGift, setIsGift, onNavigate }: { use
         setAppliedPromo(data.subscription)
       } else {
         setStep('method')
-        setPromoError(data.error || 'Ошибка платежа')
+        miniAppToast.error(data.error || 'Ошибка платежа')
       }
     } catch (e) {
       setStep('method')
-      setPromoError('Ошибка сети')
+      miniAppToast.error('Ошибка сети')
     }
   }
 
@@ -192,8 +238,8 @@ export function PaymentView({ user, plan, isGift, setIsGift, onNavigate }: { use
         <div className="flex h-24 w-24 items-center justify-center rounded-full border border-primary/20 bg-primary/10">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
         </div>
-        <p className="mt-6 text-lg font-semibold text-foreground">Обработка платежа...</p>
-        <p className="mt-2 text-sm text-muted-foreground">Подождите, это займёт несколько секунд</p>
+        <p className="mt-6 text-lg font-semibold text-foreground">Переходим к оплате...</p>
+        <p className="mt-2 text-sm text-muted-foreground">Подготавливаем страницу {selectedMethodLabel}</p>
       </div>
     )
   }
@@ -244,60 +290,56 @@ export function PaymentView({ user, plan, isGift, setIsGift, onNavigate }: { use
   }
 
   return (
-    <div className="min-h-screen px-4 pb-24 pt-6">
-      <button
-        onClick={() => onNavigate('plans')}
-        className="mb-6 flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Назад к тарифам
-      </button>
+    <div className="app-screen-shell min-h-screen px-4 pb-24 pt-6">
+      <div className="mx-auto w-full max-w-md space-y-4">
+        <button
+          onClick={() => onNavigate('plans')}
+          className="mb-5 flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Назад к тарифам
+        </button>
 
-      {/* Order summary */}
-      <div className="rounded-xl border border-border bg-card p-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium text-muted-foreground">Заказ</h2>
-          {isGift && (
-            <div className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-primary">
-              <Gift className="h-3 w-3" />
-              ПОДАРОК
+        <div className="rounded-[1.75rem] border border-border bg-card/95 p-5 shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                {isGift ? 'Подарок' : 'Подписка'}
+              </p>
+              <h1 className="mt-2 text-[1.9rem] font-black leading-[1.02] tracking-[-0.045em] text-foreground">
+                {plan.name}
+              </h1>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className="rounded-full bg-secondary/55 px-3 py-1.5 text-[11px] font-medium text-secondary-foreground">
+                  {plan.devicesCount} {plan.devicesCount === 1 ? 'устройство' : plan.devicesCount < 5 ? 'устройства' : 'устройств'}
+                </span>
+                <span className="rounded-full bg-secondary/55 px-3 py-1.5 text-[11px] font-medium text-secondary-foreground">
+                  {plan.speedLabel}
+                </span>
+                <span className="rounded-full bg-secondary/55 px-3 py-1.5 text-[11px] font-medium text-secondary-foreground">
+                  {months === 1 ? plan.period : `${months} мес.`}
+                </span>
+              </div>
             </div>
-          )}
-        </div>
-        <div className="mt-3 flex items-center justify-between">
-          <div>
-            <p className="font-bold text-foreground">{plan.name}</p>
-            <p className="text-xs text-muted-foreground">
-              {plan.devicesCount} {plan.devicesCount === 1 ? 'устройство' : plan.devicesCount < 5 ? 'устройства' : 'устройств'} &middot; {plan.speedLabel}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-xl font-extrabold text-foreground">{finalPrice} {'\u20BD'}</p>
-            {(appliedPromo || systemDiscount > 0) && (
-              <p className="text-[10px] text-primary line-through">{basePrice} {'\u20BD'}</p>
-            )}
-            <p className="text-xs text-muted-foreground">{months === 1 ? plan.period : `за ${months} мес.`}</p>
+
+            <div className="shrink-0 text-right">
+              <div className="text-[2.1rem] font-black tracking-[-0.06em] text-foreground">
+                {payablePrice} ₽
+              </div>
+              {(appliedPromo || systemDiscount > 0) && (
+                <p className="mt-1 text-[11px] text-muted-foreground line-through">{basePrice} ₽</p>
+              )}
+              {balanceToApply > 0 && (
+                <p className="mt-1 text-[11px] text-primary">Баланс: -{balanceToApply} ₽</p>
+              )}
+            </div>
           </div>
         </div>
 
-        {systemDiscount > 0 && (
-        <div className="mt-3 flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2 border border-primary/20">
-          <Sparkles className="h-3.5 w-3.5 text-primary" />
-          <p className="text-[10px] font-bold text-primary uppercase tracking-tight">
-              {discountLabel}: -{Math.round(systemDiscount * 100)}%
-          </p>
-        </div>
-        )}
-      </div>
+        {isGift && (
+          <div className="rounded-[1.5rem] border border-primary/25 bg-primary/5 p-4">
+          <p className="mb-3 text-xs font-bold text-foreground">Получатель подарка</p>
 
-      {/* Receiver Input (Only if Gift) */}
-      {isGift && (
-        <div className="mt-4 rounded-xl border border-primary/30 bg-primary/5 p-4 animate-in fade-in slide-in-from-top-2">
-          <div className="flex items-center gap-2 mb-3">
-            <Users className="h-4 w-4 text-primary" />
-            <p className="text-xs font-bold text-foreground">Кому подарок?</p>
-          </div>
-          <div className="flex flex-col gap-2">
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
               <input
@@ -305,177 +347,206 @@ export function PaymentView({ user, plan, isGift, setIsGift, onNavigate }: { use
                 value={receiverUsername}
                 onChange={(e) => setReceiverUsername(e.target.value.replace(/^@/, ''))}
                 placeholder="username_друга"
-                className="w-full rounded-lg border border-border bg-card px-8 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none transition-all"
-            />
-            {isCheckingRecipient && (
-              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                className="w-full rounded-xl border border-border bg-card px-8 py-3 text-sm text-foreground transition-all focus:border-primary focus:outline-none"
+              />
+              {isCheckingRecipient && (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground" />
+              )}
+            </div>
+
+            {isRecipientMissing && (
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Укажите username получателя, чтобы продолжить оплату.
+              </p>
+            )}
+
+            {isRecipientUnknown && (
+              <div className="mt-3 rounded-xl border border-border/80 bg-white/[0.03] px-3 py-2.5">
+                <p className="text-[11px] text-muted-foreground">
+                  Убедитесь, что username указан без ошибок.
+                </p>
+              </div>
+            )}
+
+            {recipientInfo?.found && (
+              <div className="mt-3 rounded-xl border border-orange-500/20 bg-orange-500/10 px-3 py-2.5">
+                <p className="text-[11px] text-orange-300">
+                  {recipientInfo.level >= ['scout', 'guardian', 'fortress', 'citadel'].indexOf(plan.id)
+                    ? `У @${receiverUsername} уже есть тариф ${recipientInfo.currentPlanId?.toUpperCase()}.`
+                    : `У @${receiverUsername} сейчас тариф ${recipientInfo.currentPlanId?.toUpperCase() || 'без активного тарифа'}.`}
+                </p>
+              </div>
+            )}
+
+            {recipientInfo?.found && recipientInfo.level >= ['scout', 'guardian', 'fortress', 'citadel'].indexOf(plan.id) && (
+              <button
+                onClick={() => setIsPreOrder(!isPreOrder)}
+                className={cn(
+                  'mt-3 flex items-center gap-2 rounded-xl border p-3 transition-all',
+                  isPreOrder ? 'border-primary bg-primary/10' : 'border-border bg-card'
+                )}
+              >
+                <div className={cn('flex h-4 w-4 items-center justify-center rounded border', isPreOrder ? 'border-primary bg-primary' : 'border-border')}>
+                  {isPreOrder && <Check className="h-3 w-3 text-white" />}
+                </div>
+                <p className="text-[11px] font-bold text-foreground">Оформить как предзаказ</p>
+              </button>
+            )}
+
+            {isPreOrder && (
+              <p className="mt-3 text-[10px] leading-tight text-muted-foreground">
+                Подарок активируется сразу после окончания текущей подписки.
+              </p>
             )}
           </div>
-          
-          {recipientInfo?.found && (
-            <div className="rounded-lg bg-orange-500/10 p-2 border border-orange-500/20">
-              <p className="text-[10px] text-orange-400">
-                {recipientInfo.level >= ['scout', 'guardian', 'fortress', 'citadel'].indexOf(plan.id) 
-                  ? `Внимание: У @${receiverUsername} уже есть тариф ${recipientInfo.currentPlanId?.toUpperCase()}.`
-                  : `У игрока тариф ${recipientInfo.currentPlanId?.toUpperCase()}. Ваш подарок улучшит его.`}
+        )}
+
+        <div>
+          <h2 className="mb-3 text-sm font-bold text-muted-foreground">Период оплаты</h2>
+          <div className="grid grid-cols-4 gap-2">
+            {[1, 3, 6, 12].map(m => (
+              <button
+                key={m}
+                onClick={() => setMonths(m)}
+                className={cn(
+                  'flex flex-col items-center justify-center rounded-xl border p-2 transition-all',
+                  months === m
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border bg-card text-muted-foreground hover:bg-secondary'
+                )}
+              >
+                <p className="text-lg font-bold">{m}</p>
+                <p className="text-[10px] font-medium uppercase">мес</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-[1.5rem] border border-border bg-card p-4">
+          <p className="text-xs font-medium text-muted-foreground">Промокод</p>
+          <div className="mt-2 flex gap-2">
+            <input
+              type="text"
+              value={promoCode}
+              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+              placeholder="Ввести код"
+              disabled={!!appliedPromo}
+              className="flex-1 rounded-xl border border-border bg-secondary px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none disabled:opacity-50"
+            />
+            <button
+              onClick={appliedPromo ? () => { setAppliedPromo(null); setPromoCode('') } : handleApplyPromo}
+              disabled={isValidating || (!promoCode && !appliedPromo)}
+              className={cn(
+                'rounded-xl px-4 py-2.5 text-xs font-bold transition-all',
+                appliedPromo
+                  ? 'bg-destructive/10 text-destructive'
+                  : 'bg-primary/10 text-primary hover:bg-primary/20'
+              )}
+            >
+              {isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : (appliedPromo ? 'Удалить' : 'Ок')}
+            </button>
+          </div>
+          {appliedPromo && (
+            <div className="mt-2 flex items-center gap-2 rounded-xl bg-primary/10 px-3 py-2">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <p className="text-[10px] font-medium text-primary">
+                Скидка применена: {appliedPromo.type === 'percent' ? `-${appliedPromo.value}%` : `-${appliedPromo.value} руб`}
               </p>
             </div>
           )}
+          {!appliedPromo && autoPromo && (
+            <div className="mt-2 flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <p className="text-[10px] font-medium text-primary">
+                Автоакция активна: {autoPromo.type === 'percent' ? `-${autoPromo.value}%` : `-${autoPromo.value} руб`}
+              </p>
+            </div>
+          )}
+        </div>
 
-          {recipientInfo?.found && recipientInfo.level >= ['scout', 'guardian', 'fortress', 'citadel'].indexOf(plan.id) && (
+        {availableBalance > 0 && (
+          <div className="rounded-[1.5rem] border border-border bg-card p-4">
             <button
-               onClick={() => setIsPreOrder(!isPreOrder)}
-               className={cn(
-                 "flex items-center gap-2 rounded-lg border p-2 transition-all",
-                 isPreOrder ? "border-primary bg-primary/10" : "border-border bg-card"
-               )}
+              type="button"
+              onClick={() => setUseBalance((prev) => !prev)}
+              className="flex w-full items-center justify-between gap-3 rounded-xl border border-border bg-secondary/35 px-3 py-3 text-left transition-colors hover:bg-secondary/50"
             >
-              <div className={cn("h-4 w-4 rounded border flex items-center justify-center", isPreOrder ? "bg-primary border-primary" : "border-border")}>
-                {isPreOrder && <Check className="h-3 w-3 text-white" />}
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Wallet className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Использовать баланс</p>
+                  <p className="text-xs text-muted-foreground">Доступно {availableBalance} ₽</p>
+                </div>
               </div>
-              <p className="text-[10px] font-bold text-foreground">Оформить как предзаказ</p>
-            </button>
-          )}
-
-          <p className="text-[10px] text-muted-foreground leading-tight">
-            {isPreOrder 
-              ? "Подарок будет активирован автоматически сразу после окончания текущей подписки друга."
-              : "Укажите юзернейм получателя, чтобы он сразу увидел подарок. Если оставить пустым — вы получите код."}
-          </p>
-        </div>
-      </div>
-      )}
-
-      {/* Duration Selection */}
-      <h2 className="mb-3 mt-6 text-sm font-bold text-muted-foreground">Период оплаты</h2>
-      <div className="grid grid-cols-4 gap-2">
-        {[1, 3, 6, 12].map(m => (
-          <button
-            key={m}
-            onClick={() => setMonths(m)}
-            className={cn(
-              "flex flex-col items-center justify-center rounded-xl border p-2 transition-all",
-              months === m 
-                ? "border-primary bg-primary/10 text-primary" 
-                : "border-border bg-card text-muted-foreground hover:bg-secondary"
-            )}
-          >
-            <p className="text-lg font-bold">{m}</p>
-            <p className="text-[10px] font-medium uppercase">мес</p>
-          </button>
-        ))}
-      </div>
-
-      {/* Gift Toggle in Payment View */}
-      <div className="mt-4">
-        <button
-          onClick={() => setIsGift(!isGift)}
-          className={cn(
-            "flex w-full items-center justify-between rounded-xl border p-4 transition-all",
-            isGift ? "border-primary/50 bg-primary/5" : "border-border bg-card hover:border-primary/20"
-          )}
-        >
-          <div className="flex items-center gap-3">
-            <div className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
-              isGift ? "bg-primary text-white" : "bg-primary/10 text-primary"
-            )}>
-              <Gift className="h-4 w-4" />
-            </div>
-            <div className="text-left">
-              <p className="text-xs font-bold text-foreground">Купить в подарок</p>
-              <p className="text-[9px] text-muted-foreground">Создать код активации (+15% скидка)</p>
-            </div>
-          </div>
-          <div className={cn(
-            "h-5 w-9 rounded-full p-1 transition-colors duration-200",
-            isGift ? "bg-primary" : "bg-secondary"
-          )}>
-            <div className={cn(
-              "h-3 w-3 rounded-full bg-white transition-transform duration-200",
-              isGift ? "translate-x-4" : "translate-x-0"
-            )} />
-          </div>
-        </button>
-      </div>
-
-      {/* Promo Code Section */}
-      <div className="mt-4 rounded-xl border border-border bg-card p-4">
-        <div className="flex items-center gap-2">
-          <Tag className="h-4 w-4 text-muted-foreground" />
-          <p className="text-xs font-medium text-muted-foreground">Промокод</p>
-        </div>
-        <div className="mt-2 flex gap-2">
-          <input
-            type="text"
-            value={promoCode}
-            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-            placeholder="Ввести код"
-            disabled={!!appliedPromo}
-            className="flex-1 rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none disabled:opacity-50"
-          />
-          <button
-            onClick={appliedPromo ? () => { setAppliedPromo(null); setPromoCode(''); setPromoError(null) } : handleApplyPromo}
-            disabled={isValidating || (!promoCode && !appliedPromo)}
-            className={cn(
-              'rounded-lg px-4 py-2 text-xs font-bold transition-all',
-              appliedPromo
-                ? 'bg-destructive/10 text-destructive'
-                : 'bg-primary/10 text-primary hover:bg-primary/20'
-            )}
-          >
-            {isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : (appliedPromo ? 'Удалить' : 'Ок')}
-          </button>
-        </div>
-        {promoError && (
-          <p className="mt-1.5 text-[10px] text-destructive">{promoError}</p>
-        )}
-        {appliedPromo && (
-          <div className="mt-2 flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            <p className="text-[10px] font-medium text-primary">
-              Скидка применена: {appliedPromo.type === 'percent' ? `-${appliedPromo.value}%` : `-${appliedPromo.value} руб`}
-            </p>
-          </div>
-        )}
-        {!appliedPromo && autoPromo && (
-          <div className="mt-2 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            <p className="text-[10px] font-medium text-primary">
-              Автоакция активна: {autoPromo.type === 'percent' ? `-${autoPromo.value}%` : `-${autoPromo.value} руб`}
-            </p>
-          </div>
-        )}
-      </div>
-      {/* Payment methods */}
-      <h2 className="mb-3 mt-6 text-sm font-bold text-muted-foreground">Способ оплаты</h2>
-      <div className="space-y-2">
-        {PAYMENT_METHODS.map((pm) => {
-          return (
-            <div
-              key={pm.id}
-              className="flex w-full items-center gap-4 rounded-2xl border border-primary/30 bg-primary/5 p-5 shadow-sm transition-all"
-            >
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 overflow-hidden">
-                {pm.image ? (
-                  <img src={pm.image} alt={pm.label} className="h-8 w-8 object-contain" />
-                ) : (
-                  pm.icon && <pm.icon className="h-6 w-6 text-primary" />
+              <div
+                className={cn(
+                  'flex h-6 w-10 items-center rounded-full border transition-colors',
+                  useBalance ? 'border-primary bg-primary/20' : 'border-border bg-card'
                 )}
+              >
+                <span
+                  className={cn(
+                    'h-4 w-4 rounded-full transition-all',
+                    useBalance ? 'ml-5 bg-primary' : 'ml-1 bg-muted-foreground/40'
+                  )}
+                />
               </div>
-              <div className="text-left">
-                <p className="text-base font-bold text-foreground">
-                  {pm.label}
-                </p>
-                <p className="text-xs text-muted-foreground">{pm.description}</p>
-              </div>
-              <div className="ml-auto rounded-full bg-primary/10 px-3 py-1">
-                <p className="text-[10px] font-bold text-primary">ВЫБРАНО</p>
-              </div>
-            </div>
-          )
-        })}
-      </div>
+            </button>
+            {useBalance && balanceToApply > 0 && (
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Спишем {balanceToApply} ₽, к оплате останется {payablePrice} ₽.
+              </p>
+            )}
+          </div>
+        )}
+
+        <div>
+          <h2 className="mb-3 text-sm font-bold text-muted-foreground">Способ оплаты</h2>
+          <div className="space-y-2">
+            {PAYMENT_METHODS.map((pm) => {
+              const isSelected = method === pm.id
+              return (
+                <button
+                  key={pm.id}
+                  type="button"
+                  onClick={() => setMethod(pm.id)}
+                  className={cn(
+                    'flex w-full items-center gap-4 rounded-[1.5rem] border bg-card/95 p-5 text-left shadow-sm transition-all',
+                    isSelected
+                      ? 'border-primary/20 shadow-[0_14px_36px_rgba(59,130,246,0.12)]'
+                      : 'border-border hover:border-primary/20 hover:bg-card'
+                  )}
+                >
+                  <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-[#49b8e8]/15">
+                    {pm.image ? (
+                      <img src={pm.image} alt={pm.label} className="h-full w-full object-cover" />
+                    ) : (
+                      pm.icon && <pm.icon className="h-6 w-6 text-primary" />
+                    )}
+                  </div>
+                  <div className="min-w-0 text-left">
+                    <p className="text-base font-bold text-foreground">
+                      {pm.label}
+                    </p>
+                  </div>
+                  <div className={cn(
+                    'ml-auto rounded-full px-3 py-1',
+                    isSelected ? 'bg-primary/10' : 'bg-secondary/50'
+                  )}>
+                    <p className={cn(
+                      'text-[10px] font-bold',
+                      isSelected ? 'text-primary' : 'text-muted-foreground'
+                    )}>
+                      {isSelected ? 'ВЫБРАНО' : 'ВЫБРАТЬ'}
+                    </p>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
 
       {/* Pay button with validation */}
       {(() => {
@@ -497,52 +568,57 @@ export function PaymentView({ user, plan, isGift, setIsGift, onNavigate }: { use
           }
         }
 
-        // Validation for recipient
-        if (isGift && recipientInfo?.found) {
-          if (recipientInfo.level >= selectedLevel && !isPreOrder) {
-            disabled = true
-            reason = 'Такой тариф уже есть'
-          }
-        }
-
         return (
-          <div className="mt-6 flex flex-col gap-2">
+          <div className="mt-2 flex flex-col gap-2">
             <button
               onClick={handlePay}
-              disabled={!method || disabled}
+              disabled={(!method && payablePrice > 0) || disabled}
               className={cn(
                 'w-full rounded-xl py-3.5 text-sm font-semibold transition-all',
-                method && !disabled
+                (method || payablePrice === 0) && !disabled
                   ? 'bg-primary text-primary-foreground hover:brightness-110 shadow-lg shadow-primary/20'
                   : 'cursor-not-allowed bg-secondary text-muted-foreground'
               )}
             >
-              {disabled ? reason : `Оплатить ${finalPrice} \u20BD`}
+              {disabled ? reason : `Оплатить ${payablePrice} \u20BD`}
             </button>
-            {disabled && (
-              <p className="text-center text-[10px] text-destructive font-medium">
-                Чтобы сменить текущий тариф на другой, подождите окончания текущей подписки или купите его в подарок.
+
+            <div className="rounded-2xl border border-white/8 bg-white/[0.035] px-4 py-3 text-center">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-foreground/35">
+                Условия оплаты
               </p>
-            )}
+              <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+                Продолжая оплату, вы принимаете{' '}
+                <button
+                  type="button"
+                  onClick={() => onNavigate('documents')}
+                  className="font-medium text-foreground underline decoration-white/20 underline-offset-4 transition-colors hover:text-primary"
+                >
+                  оферту
+                </button>
+                ,{' '}
+                <button
+                  type="button"
+                  onClick={() => onNavigate('documents')}
+                  className="font-medium text-foreground underline decoration-white/20 underline-offset-4 transition-colors hover:text-primary"
+                >
+                  политику конфиденциальности
+                </button>
+                {' '}и{' '}
+                <button
+                  type="button"
+                  onClick={() => onNavigate('documents')}
+                  className="font-medium text-foreground underline decoration-white/20 underline-offset-4 transition-colors hover:text-primary"
+                >
+                  правила возврата
+                </button>
+                .
+              </p>
+            </div>
           </div>
         )
       })()}
-
-      <button 
-        onClick={() => onNavigate('documents')}
-        className="mt-6 flex w-full items-center justify-between rounded-xl border border-primary/20 bg-primary/5 p-4 transition-colors hover:bg-primary/10"
-      >
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20">
-            <FileText className="h-4 w-4 text-primary" />
-          </div>
-          <div className="text-left">
-            <p className="text-xs font-semibold text-foreground">Правовая информация</p>
-            <p className="text-[10px] text-muted-foreground">Оферта и политика конфиденциальности</p>
-          </div>
-        </div>
-        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-      </button>
+      </div>
     </div>
   )
 }

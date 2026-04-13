@@ -1,6 +1,7 @@
 import prisma from '../lib/db';
 import fs from 'fs';
 import path from 'path';
+const { getBroadcastStartText } = require('../lib/telegram-location-summary');
 
 // Using direct Telegram API via fetch to avoid telegraf dependency in the main project
 const token = process.env.BOT_TOKEN;
@@ -8,11 +9,6 @@ const token = process.env.BOT_TOKEN;
 if (!token) {
   throw new Error('BOT_TOKEN environment variable is required for broadcast-welcome.ts');
 }
-
-const START_TEXT = '<b>Добро пожаловать в PrivatVPN! 🛡️</b>\n\n' +
-  'Надежный сервис для безопасного и свободного доступа в сеть.\n' +
-  'Текущие локации: 🇩🇪 Германия | 🇳🇱 Нидерланды\n\n' +
-  '👇 <i>Выберите нужное действие в меню ниже:</i>';
 
 const WEB_APP_URL = process.env.WEB_APP_URL || 'https://privatevp.space/';
 
@@ -63,13 +59,15 @@ async function broadcast() {
     process.exit(1);
   }
 
+  const startText = await getBroadcastStartText(prisma);
+
   let success = 0;
   let failed = 0;
 
   for (const user of users) {
     if (!user.telegramId) continue;
     try {
-      const result: any = await sendPhoto(user.telegramId, photoPath, START_TEXT);
+      const result: any = await sendPhoto(user.telegramId, photoPath, startText);
       if (result.ok) {
         success++;
       } else {

@@ -3,6 +3,7 @@ import prisma from '@/lib/db'
 import { execSync } from 'child_process'
 import crypto from 'crypto'
 import { nextLocationName, resolveFlagIso } from '@/lib/location-naming'
+import { DEFAULT_REALITY_SNI } from '@/lib/vpn-protocols'
 
 export async function GET(req: Request) {
   try {
@@ -25,13 +26,14 @@ export async function POST(req: Request) {
     await requireAdmin()
 
     const body = await req.json()
-    const { country, flag, host, sshPass, isActive } = body
+    const { country, flag, host, sshUser, sshPass, isActive } = body
 
     if (!host) {
       return NextResponse.json({ error: 'Host is required' }, { status: 400 })
     }
 
     const normalizedCountry = String(country || '').trim() || 'Unknown'
+    const normalizedSshUser = String(sshUser || '').trim() || 'root'
     const finalName = await nextLocationName(prisma, normalizedCountry)
     const finalFlag = resolveFlagIso(normalizedCountry, flag)
 
@@ -58,7 +60,7 @@ export async function POST(req: Request) {
         country: normalizedCountry,
         flag: finalFlag,
         host,
-        sshUser: 'root',
+        sshUser: normalizedSshUser,
         sshPass: sshPass || '',
         isActive: isActive !== false,
         ping: 0,
@@ -69,7 +71,7 @@ export async function POST(req: Request) {
         vlessRealityPublicKey: publicKey,
         vlessRealityPrivateKey: privateKey,
         vlessRealityShortId,
-        vlessRealitySni: 'www.microsoft.com',
+        vlessRealitySni: DEFAULT_REALITY_SNI,
         vlessPort: 443,
         vlessNetwork: 'tcp',
         vlessTls: true,

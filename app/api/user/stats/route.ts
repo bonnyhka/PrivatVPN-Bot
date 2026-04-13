@@ -14,12 +14,14 @@ export async function GET() {
 
     // 1. Get active devices (sessions seen in the last 5 minutes)
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
-    const activeDevices = await prisma.activeSession.count({
-      where: { 
+    const activeSessionRows = await (prisma as any).activeSession.findMany({
+      where: {
         userId,
         lastSeen: { gte: fiveMinutesAgo }
-      }
+      },
+      select: { ip: true }
     })
+    const activeDevices = new Set(activeSessionRows.map((row: any) => row.ip)).size
 
     // 2. Get total traffic (sum of all user's traffic logs)
     const subscription = await prisma.subscription.findUnique({
@@ -54,14 +56,14 @@ export async function GET() {
       return true
     }).length
 
-    const uptimePercent = Number(((healthyLocations / totalLocations) * 100).toFixed(1))
+    const networkAvailabilityPercent = Number(((healthyLocations / totalLocations) * 100).toFixed(1))
 
     const accountAgeDays = Math.max(1, Math.ceil((Date.now() - (subscription?.createdAt?.getTime() || Date.now())) / (1000 * 60 * 60 * 24)))
 
     return NextResponse.json({
       activeDevices,
       totalTrafficAllTime,
-      uptimePercent,
+      networkAvailabilityPercent,
       accountAgeDays
     })
   } catch (error) {

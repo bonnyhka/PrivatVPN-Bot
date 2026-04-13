@@ -34,6 +34,8 @@ export default function RootLayout({
             __html: `
               (function () {
                 var sent = 0;
+                var reloadCountKey = 'privatvpn_asset_reload_count_v2';
+                var maxReloadAttempts = 3;
                 function send(payload) {
                   if (sent > 20) return;
                   sent += 1;
@@ -53,22 +55,65 @@ export default function RootLayout({
                   } catch (e) {}
                 }
 
+                function isRecoverableAssetIssue(message, source, target) {
+                  var text = String(message || '') + ' ' + String(source || '') + ' ' + String((target && (target.src || target.href || target.tagName)) || '');
+                  text = text.toLowerCase();
+                  return (
+                    text.indexOf('asset load error') !== -1 ||
+                    text.indexOf('chunkloaderror') !== -1 ||
+                    text.indexOf('failed to fetch dynamically imported module') !== -1 ||
+                    text.indexOf('failed to load module script') !== -1 ||
+                    text.indexOf('/_next/static/') !== -1 ||
+                    text.indexOf('middleware-manifest') !== -1
+                  );
+                }
+
+                function tryRecoverFromAssetIssue() {
+                  try {
+                    var attempts = Number(sessionStorage.getItem(reloadCountKey) || '0');
+                    if (!Number.isFinite(attempts)) attempts = 0;
+                    if (attempts >= maxReloadAttempts) return;
+                    sessionStorage.setItem(reloadCountKey, String(attempts + 1));
+
+                    var nextUrl = new URL(location.href);
+                    nextUrl.searchParams.set('__miniapp_reload', String(Date.now()));
+                    nextUrl.searchParams.set('__miniapp_attempt', String(attempts + 1));
+                    location.replace(nextUrl.toString());
+                  } catch (e) {
+                    try {
+                      location.reload();
+                    } catch (_) {}
+                  }
+                }
+
+                try {
+                  setTimeout(function () {
+                    try { sessionStorage.removeItem(reloadCountKey); } catch (e) {}
+                  }, 15000);
+                } catch (e) {}
+
                 window.addEventListener('error', function (event) {
                   var target = event && event.target;
                   var isAssetError = target && target !== window;
+                  var message = isAssetError
+                    ? ('Asset load error: ' + ((target.src || target.href || target.tagName || 'unknown')))
+                    : String(event.message || 'Unknown window error');
+                  var source = event.filename || (target && (target.src || target.href)) || null;
                   send({
                     type: isAssetError ? 'asset-error' : 'window-error',
-                    message: isAssetError
-                      ? ('Asset load error: ' + ((target.src || target.href || target.tagName || 'unknown')))
-                      : String(event.message || 'Unknown window error'),
+                    message: message,
                     stack: event.error && event.error.stack ? String(event.error.stack) : null,
-                    source: event.filename || (target && (target.src || target.href)) || null,
+                    source: source,
                     lineno: event.lineno || null,
                     colno: event.colno || null,
                     href: location.href,
                     userAgent: navigator.userAgent,
                     timestamp: new Date().toISOString()
                   });
+
+                  if (isRecoverableAssetIssue(message, source, target)) {
+                    tryRecoverFromAssetIssue();
+                  }
                 }, true);
 
                 window.addEventListener('unhandledrejection', function (event) {
@@ -94,6 +139,10 @@ export default function RootLayout({
                     userAgent: navigator.userAgent,
                     timestamp: new Date().toISOString()
                   });
+
+                  if (isRecoverableAssetIssue(message, null, null)) {
+                    tryRecoverFromAssetIssue();
+                  }
                 });
               })();
             `,

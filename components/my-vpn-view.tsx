@@ -1,28 +1,61 @@
 'use client'
 
-import { useState } from 'react'
-import { Copy, Check, Clock, Shield, AlertTriangle, Zap, Loader2, RefreshCw } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
-import type { User, AppView } from '@/lib/types'
+import { useMemo, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import {
+  AlertTriangle,
+  CalendarDays,
+  Headset,
+  Loader2,
+  ReceiptText,
+  ShieldCheck,
+} from 'lucide-react'
+import type { AppView, User } from '@/lib/types'
 import { PLANS } from '@/lib/store'
-import { cn } from '@/lib/utils'
-import { PaymentHistory } from './payment-history'
-import { useTelegramUser } from './providers/telegram-provider'
 import { AnimatedContainer, AnimatedItem } from '@/components/ui/animated-view'
+import { PaymentHistory } from './payment-history'
+import { MyVpnManageCard } from './my-vpn-manage-card'
+import { useTelegramUser } from './providers/telegram-provider'
 
 interface MyVpnViewProps {
   user: User
   onNavigate: (view: AppView) => void
 }
 
+function getRemainingDays(expiresAt?: string | null) {
+  if (!expiresAt) return 0
+  const timestamp = new Date(expiresAt).getTime()
+  if (!Number.isFinite(timestamp)) return 0
+  return Math.max(0, Math.ceil((timestamp - Date.now()) / (1000 * 60 * 60 * 24)))
+}
+
+function getRemainingLabel(days: number) {
+  if (days >= 730) return `${Math.floor(days / 365)} лет`
+  if (days >= 60) return `${Math.floor(days / 30)} мес`
+  return `${days} дн`
+}
+
+function formatTraffic(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 Б'
+  const units = ['Б', 'КБ', 'МБ', 'ГБ', 'ТБ']
+  let value = bytes
+  let unit = 0
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024
+    unit += 1
+  }
+  return `${value.toFixed(value >= 100 || unit === 0 ? 0 : 1)} ${units[unit]}`
+}
+
 export function MyVpnView({ user, onNavigate }: MyVpnViewProps) {
   const { refreshUser } = useTelegramUser()
   const [copied, setCopied] = useState(false)
-  const sub = user.subscription
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [isResetting, setIsResetting] = useState(false)
 
-  const plan = PLANS.find((p) => p.id === sub?.planId)
+  const sub = user.subscription
+  const plan = PLANS.find((item) => item.id === sub?.planId)
+  const remainingDays = useMemo(() => getRemainingDays(sub?.expiresAt), [sub?.expiresAt])
 
   const handleCopy = () => {
     if (sub?.subscriptionUrl) {
@@ -35,15 +68,15 @@ export function MyVpnView({ user, onNavigate }: MyVpnViewProps) {
   const handleResetKey = async () => {
     setIsResetting(true)
     try {
-      const res = await fetch('/api/user/subscription/reset-key', {
+      const response = await fetch('/api/user/subscription/reset-key', {
         method: 'PATCH',
       })
-      if (res.ok) {
+      if (response.ok) {
         await refreshUser()
         setShowResetConfirm(false)
       }
-    } catch (err) {
-      console.error(err)
+    } catch (error) {
+      console.error(error)
     } finally {
       setIsResetting(false)
     }
@@ -51,132 +84,142 @@ export function MyVpnView({ user, onNavigate }: MyVpnViewProps) {
 
   if (!sub || sub.status !== 'active') {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center px-4 pb-24">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full border border-border bg-secondary">
-          <AlertTriangle className="h-8 w-8 text-muted-foreground" />
+      <AnimatedContainer className="app-screen-shell min-h-screen px-4 pb-24 pt-6">
+        <div className="mx-auto flex w-full max-w-md flex-col gap-4">
+          <AnimatedItem>
+            <div className="grain-surface rounded-[28px] border border-border/80 bg-card/95 p-6 text-center shadow-[0_24px_70px_-50px_rgba(0,0,0,0.9)]">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/10 text-red-400">
+                <AlertTriangle className="h-6 w-6" />
+              </div>
+              <h2 className="mt-4 text-lg font-black text-foreground">Подписка не активна</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                Подключите тариф, чтобы получить ключ и управление VPN в этой вкладке.
+              </p>
+              <button
+                onClick={() => onNavigate('plans')}
+                className="mt-5 w-full rounded-2xl bg-primary py-3 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
+              >
+                Выбрать тариф
+              </button>
+            </div>
+          </AnimatedItem>
         </div>
-        <h2 className="mt-6 text-lg font-bold text-foreground">Нет активной подписки</h2>
-        <p className="mt-2 text-center text-sm text-muted-foreground">
-          Подключите тариф, чтобы получить VPN ключ
-        </p>
-        <button
-          onClick={() => onNavigate('plans')}
-          className="mt-6 rounded-xl bg-primary px-8 py-3 text-sm font-semibold text-primary-foreground transition-all hover:brightness-110"
-        >
-          Выбрать тариф
-        </button>
-      </div>
+      </AnimatedContainer>
     )
   }
 
-  const daysLeft = Math.ceil(
-    (new Date(sub.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-  )
   return (
-    <AnimatedContainer className="min-h-screen px-4 pb-24 pt-6">
-      <AnimatedItem>
-        <h1 className="text-xl font-bold text-foreground">Мой VPN</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Управление подпиской</p>
-      </AnimatedItem>
-
-      {/* Active plan card */}
-      <AnimatedItem className="mt-6 rounded-2xl border border-primary/30 bg-card p-5 glow-green">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15">
-              <Shield className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-bold text-foreground">{plan?.name || 'VPN'}</h3>
-              <p className="text-xs text-muted-foreground">{plan?.speedLabel} &middot; {plan?.devicesCount} устр.</p>
-            </div>
-          </div>
-          <div className="rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
-            Активен
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <div className="flex items-center justify-between rounded-lg bg-secondary p-3">
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              <span className="text-xs font-medium">Истекает</span>
-            </div>
-            <p className="text-sm font-bold text-foreground">
-              {new Date(sub.expiresAt).toLocaleDateString('ru-RU')}
-            </p>
-          </div>
-        </div>
-
-        {/* Days left bar */}
-        <div className="mt-4">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Осталось дней</span>
-            <span className="font-semibold text-foreground">{daysLeft}</span>
-          </div>
-          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
-            <div
-              className="h-full rounded-full bg-primary transition-all"
-              style={{ width: `${Math.min(100, (daysLeft / 30) * 100)}%` }}
+    <AnimatedContainer className="app-screen-shell min-h-screen px-4 pb-24 pt-6">
+      <div className="mx-auto w-full max-w-md space-y-4">
+        <AnimatedItem>
+          <div className="grain-surface relative overflow-hidden rounded-[28px] border border-border/80 bg-card/95 p-5 shadow-[0_24px_70px_-50px_rgba(0,0,0,0.9)]">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(80,120,255,0.18),transparent_48%)]" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(120,130,255,0.11),transparent_50%)]" />
+            <img
+              src="/images/referral-hero.gif"
+              alt=""
+              className="pointer-events-none absolute -right-10 -top-10 h-[160%] w-[60%] rotate-[10deg] object-contain opacity-68"
             />
-          </div>
-        </div>
 
-        {/* Traffic usage bar */}
-        {plan && (
-          <div className="mt-5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">
-                Трафик ({plan.trafficLimit === Number.MAX_SAFE_INTEGER ? 'Безлимит' : `${Math.round(plan.trafficLimit / (1024**3))} ГБ`})
-              </span>
-              <span className="font-semibold text-foreground">
-                {sub.trafficUsed ? (Number(sub.trafficUsed) / (1024**3)).toFixed(1) : '0'} ГБ
-              </span>
-            </div>
-            {plan.trafficLimit !== Number.MAX_SAFE_INTEGER && (
-              <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all",
-                    (Number(sub.trafficUsed || 0) / plan.trafficLimit) > 0.9 ? 'bg-red-500' : 'bg-primary'
-                  )}
-                  style={{ width: `${Math.min(100, (Number(sub.trafficUsed || 0) / plan.trafficLimit) * 100)}%` }}
-                />
+            <div className="relative">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                    Подписка PrivatVPN
+                  </p>
+                  <h1 className="mt-2 text-[1.7rem] font-black leading-[1.03] tracking-[-0.045em] text-foreground">
+                    Мой VPN
+                  </h1>
+                </div>
+
+                <div className="shrink-0 rounded-full border border-emerald-500/25 bg-emerald-500/12 px-2.5 py-1 text-[10px] font-semibold text-emerald-300">
+                  Активна
+                </div>
               </div>
-            )}
+
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <div className="rounded-2xl border border-border/80 bg-secondary/35 px-3 py-2.5">
+                  <p className="text-[10px] text-muted-foreground">План</p>
+                  <p className="mt-1 text-sm font-black text-foreground">{plan?.name || 'Тариф'}</p>
+                </div>
+                <div className="rounded-2xl border border-border/80 bg-secondary/35 px-3 py-2.5">
+                  <p className="text-[10px] text-muted-foreground">Осталось</p>
+                  <p className="mt-1 text-sm font-black text-foreground">{getRemainingLabel(remainingDays)}</p>
+                </div>
+                <div className="rounded-2xl border border-border/80 bg-secondary/35 px-3 py-2.5">
+                  <p className="text-[10px] text-muted-foreground">Трафик</p>
+                  <p className="mt-1 text-sm font-black text-foreground">
+                    {formatTraffic(Number(sub.trafficUsed || 0))}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-center justify-between rounded-2xl border border-border/80 bg-secondary/25 px-3 py-2.5">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <CalendarDays className="h-4 w-4 text-primary" />
+                  <span className="text-[11px]">Доступ активен до окончания срока</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-300">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  OK
+                </div>
+              </div>
+            </div>
           </div>
-        )}
+        </AnimatedItem>
 
-        {/* Action Buttons */}
-        <div className="mt-8 flex flex-col gap-3">
+        <AnimatedItem>
+          <MyVpnManageCard
+            plan={plan}
+            subscription={sub}
+            copied={copied}
+            onCopy={handleCopy}
+            onConnect={() => onNavigate('connect')}
+            onReset={() => setShowResetConfirm(true)}
+            isResetting={isResetting}
+          />
+        </AnimatedItem>
+
+        <AnimatedItem className="grid grid-cols-2 gap-2.5">
           <button
-            onClick={() => onNavigate('connect')}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            onClick={() => onNavigate('plans')}
+            className="grain-surface rounded-2xl border border-border/80 bg-card/95 p-4 text-left transition-all hover:border-primary/30"
           >
-            <Zap className="h-5 w-5 fill-current" />
-            Подключить в приложение
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <ReceiptText className="h-4 w-4" />
+            </div>
+            <p className="mt-3 text-sm font-semibold text-foreground">Сменить тариф</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">Обновить план подписки</p>
           </button>
+
           <button
-            onClick={handleCopy}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/5 py-4 text-sm font-bold text-primary transition-all hover:bg-primary/11 hover:border-primary/30"
+            onClick={() => onNavigate('support')}
+            className="grain-surface rounded-2xl border border-border/80 bg-card/95 p-4 text-left transition-all hover:border-primary/30"
           >
-            {copied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
-            {copied ? 'Ключ скопирован' : 'Скопировать ключ'}
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Headset className="h-4 w-4" />
+            </div>
+            <p className="mt-3 text-sm font-semibold text-foreground">Поддержка</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">Поможем с настройкой</p>
           </button>
-          
-          <button
-            onClick={() => setShowResetConfirm(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-xs font-medium text-muted-foreground transition-all hover:text-red-400"
-          >
-            <RefreshCw className={cn("h-3.5 w-3.5", isResetting && "animate-spin")} />
-            Перевыпустить ключ доступа
-          </button>
-        </div>
-      </AnimatedItem>
+        </AnimatedItem>
 
+        <AnimatedItem className="pb-4">
+          <div className="grain-surface rounded-[24px] border border-border/80 bg-card/95 p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-foreground">История оплат</p>
+                <p className="text-[11px] text-muted-foreground">Последние транзакции по подписке</p>
+              </div>
+              <div className="rounded-full border border-border bg-secondary/40 px-2 py-1 text-[10px] text-muted-foreground">
+                Лента
+              </div>
+            </div>
+            <PaymentHistory onNavigate={onNavigate} />
+          </div>
+        </AnimatedItem>
+      </div>
 
-
-      {/* Reset Confirmation Modal */}
       <AnimatePresence>
         {showResetConfirm && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
@@ -191,10 +234,10 @@ export function MyVpnView({ user, onNavigate }: MyVpnViewProps) {
                   <AlertTriangle className="h-6 w-6" />
                 </div>
                 <h3 className="mt-4 text-lg font-bold text-foreground">Сбросить ключ?</h3>
-                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                  Ваши текущие настройки VPN на всех устройствах перестанут работать. Вам нужно будет скопировать новый ключ.
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Текущие настройки VPN на устройствах перестанут работать, потребуется новый ключ.
                 </p>
-                
+
                 <div className="mt-6 flex w-full flex-col gap-2">
                   <button
                     onClick={handleResetKey}
@@ -215,33 +258,6 @@ export function MyVpnView({ user, onNavigate }: MyVpnViewProps) {
           </div>
         )}
       </AnimatePresence>
-
-
-
-      {/* Quick actions */}
-      <AnimatedItem className="mt-4 grid grid-cols-2 gap-3">
-        <button
-          onClick={() => onNavigate('plans')}
-          className="rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/30"
-        >
-          <p className="text-sm font-semibold text-foreground">Сменить тариф</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">Обновить план</p>
-        </button>
-        <button
-          onClick={() => onNavigate('support')}
-          className="rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/30"
-        >
-          <p className="text-sm font-semibold text-foreground">Поддержка</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">Помощь 24/7</p>
-        </button>
-      </AnimatedItem>
-
-      {/* Payment history */}
-      <AnimatedItem>
-        <h2 className="mb-3 mt-6 text-sm font-medium text-muted-foreground">История оплат</h2>
-        <PaymentHistory />
-      </AnimatedItem>
     </AnimatedContainer>
   )
 }
-

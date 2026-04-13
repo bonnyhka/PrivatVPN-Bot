@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const SYNC_SPEED_FILE = path.resolve(__dirname, '..', 'data', 'realtime-speed.json')
+const LOCATION_REFRESH_MS = 60_000
 
 interface NodeSpeed {
   rxMBps: number
@@ -15,6 +16,7 @@ interface NodeSpeed {
 }
 
 const speedData: Record<string, NodeSpeed> = {}
+const monitoredLocations = new Set<string>()
 
 function writeSpeedData() {
   try {
@@ -48,6 +50,12 @@ function writeSpeedData() {
 }
 
 async function monitorLocation(loc: any) {
+  if (monitoredLocations.has(loc.id)) {
+    return
+  }
+
+  monitoredLocations.add(loc.id)
+
   return new Promise<void>((resolve) => {
     let lastRx = -1
     let lastTx = -1
@@ -110,41 +118,69 @@ async function monitorLocation(loc: any) {
         }).on('close', () => {
           console.log(`[REALTIME-SPEED] Stream closed on ${loc.name}`)
           conn.end()
+          monitoredLocations.delete(loc.id)
           setTimeout(() => monitorLocation(loc), 5000)
         })
       })
     }).on('error', (err: Error) => {
       console.error(`[REALTIME-SPEED] SSH Error on ${loc.name}:`, err.message)
+      monitoredLocations.delete(loc.id)
       setTimeout(() => monitorLocation(loc), 10000) // reconnect backoff
     }).connect({
       host: loc.host,
       port: 22,
-      username: 'root',
+      username: loc.sshUser || 'root',
       password: loc.sshPass,
       keepaliveInterval: 10000
     })
   })
 }
 
-async function main() {
-  console.log('[REALTIME-SPEED] Starting real-time bandwidth monitor.')
-  
+async function refreshLocations() {
   const locations = await prisma.location.findMany({
     where: { 
       isActive: true,
       sshPass: { not: null }
-    }
+    },
+    select: {
+      id: true,
+      name: true,
+      host: true,
+      sshUser: true,
+      sshPass: true,
+    },
   })
 
   if (locations.length === 0) {
-    console.log('[REALTIME-SPEED] No active locations found. Exiting.')
+    console.log('[REALTIME-SPEED] No active locations found.')
     return
   }
 
-  // Start monitoring all locations concurrently
   for (const loc of locations) {
-    monitorLocation(loc)
+    if (!monitoredLocations.has(loc.id)) {
+      console.log(`[REALTIME-SPEED] Registering monitor for ${loc.name} (${loc.host})`)
+      monitorLocation(loc)
+    }
   }
+
+  const activeIds = new Set(locations.map((loc) => loc.id))
+  for (const locId of Object.keys(speedData)) {
+    if (!activeIds.has(locId)) {
+      delete speedData[locId]
+    }
+  }
+
+  writeSpeedData()
+}
+
+async function main() {
+  console.log('[REALTIME-SPEED] Starting real-time bandwidth monitor.')
+  await refreshLocations()
+  setInterval(() => {
+    refreshLocations().catch((error) => {
+      console.error('[REALTIME-SPEED] Refresh failed:', error)
+    })
+  }, LOCATION_REFRESH_MS)
 }
 
 main().catch(console.error)

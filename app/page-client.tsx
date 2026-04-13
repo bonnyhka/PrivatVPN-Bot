@@ -10,6 +10,7 @@ import { HomeView } from '@/components/home-view'
 import { Header } from '@/components/header'
 import { usePlans } from '@/hooks/use-plans'
 import { AppErrorBoundary } from '@/components/app-error-boundary'
+import { Toaster } from '@/components/ui/toaster'
 
 const PlansView = nextDynamic(() => import('@/components/plans-view').then((mod) => mod.PlansView), { ssr: false })
 const PaymentView = nextDynamic(() => import('@/components/payment-view').then((mod) => mod.PaymentView), { ssr: false })
@@ -30,6 +31,8 @@ const AdminPricingView = nextDynamic(() => import('@/components/admin-pricing-vi
 const DocumentsView = nextDynamic(() => import('@/components/documents-view').then((mod) => mod.DocumentsView), { ssr: false })
 const GuideTour = nextDynamic(() => import('@/components/guide-tour').then((mod) => mod.GuideTour), { ssr: false })
 const ConnectView = nextDynamic(() => import('@/components/connect-view').then((mod) => mod.ConnectView), { ssr: false })
+import type { ServiceStatusViewProps } from "@/components/service-status-view"
+const ServiceStatusView = nextDynamic<ServiceStatusViewProps>(() => import("@/components/service-status-view").then((mod) => mod.ServiceStatusView), { ssr: false })
 const GiftOpening = nextDynamic(() => import('@/components/gift-opening').then((mod) => mod.GiftOpening), { ssr: false })
 const AdminInfoView = nextDynamic(
   () => import('@/components/admin-info-view').then((mod) => mod.AdminInfoView),
@@ -42,7 +45,7 @@ const AdminLocationsView = nextDynamic(
 
 const VIEW_STORAGE_KEY = 'privatvpn_current_view_v2'
 const LEGACY_VIEW_STORAGE_KEY = 'privatvpn_current_view'
-const SAFE_RESTORABLE_VIEWS: AppView[] = ['home', 'plans', 'my-vpn', 'support', 'referral', 'connect', 'market']
+const SAFE_RESTORABLE_VIEWS: AppView[] = ['home', 'plans', 'my-vpn', 'support', 'referral', 'connect', 'market', 'service-status']
 
 export function PageClient() {
   const [currentView, setCurrentView] = useState<AppView>('home')
@@ -94,7 +97,7 @@ export function PageClient() {
 
   if (isLoading || plansLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background text-foreground">
+      <div className="flex h-screen items-center justify-center text-foreground">
         <div className="flex flex-col items-center gap-4">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
           <p>Загрузка данных...</p>
@@ -105,7 +108,7 @@ export function PageClient() {
 
   if (error || !user) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background p-4 text-center text-foreground">
+      <div className="flex h-screen items-center justify-center p-4 text-center text-foreground">
         <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-6">
           <h2 className="mb-2 text-lg font-bold text-red-500">Ошибка</h2>
           <p className="text-sm text-foreground/80">{error || 'Пользователь не найден'}</p>
@@ -126,7 +129,8 @@ export function PageClient() {
 
   return (
     <AppErrorBoundary onReset={handleSafeReset}>
-      <div className="mx-auto min-h-screen max-w-md bg-background">
+      <div className="fancy-bg" />
+      <div className="mx-auto min-h-screen max-w-md">
         <Header user={user} onNavigate={handleNavigate} />
 
         <AnimatePresence mode="wait">
@@ -163,6 +167,7 @@ export function PageClient() {
             {currentView === 'market' && <MarketView onNavigate={handleNavigate} />}
             {currentView === 'connect' && <ConnectView user={user} onNavigate={handleNavigate} />}
             {currentView === 'documents' && <DocumentsView onNavigate={handleNavigate} />}
+            {currentView === 'service-status' && <ServiceStatusView onNavigate={handleNavigate} />}
           </motion.div>
         </AnimatePresence>
 
@@ -170,6 +175,7 @@ export function PageClient() {
           <BottomNav currentView={currentView} onNavigate={handleNavigate} userRole={user.role} />
         )}
 
+        <Toaster />
         {showOnboarding && <GuideTour onComplete={handleOnboardingComplete} />}
         <GiftOpening />
       </div>

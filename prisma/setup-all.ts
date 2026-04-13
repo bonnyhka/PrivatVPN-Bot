@@ -105,7 +105,7 @@ async function main() {
   }
 
   await setupServer('94.156.179.93', sshPassword, 'Germany #1', 'www.microsoft.com', ['www.microsoft.com', 'microsoft.com'], '8e70f204859bc060')
-  await setupServer('45.84.222.96', sshPassword, 'Netherlands #1', 'www.google.com', ['www.google.com', 'google.com'], '9f10e304859bc070')
+  await setupServer('45.84.222.96', sshPassword, 'Netherlands #1', 'dl.google.com', ['dl.google.com', 'google.com'], '9f10e304859bc070')
 }
 
 main().catch(console.error)

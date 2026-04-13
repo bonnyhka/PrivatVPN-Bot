@@ -20,7 +20,7 @@ conn.on('ready', () => {
         listen: '::',
         listen_port: 12443,
         sniff: true,
-        users: [{ uuid: '0e4a14cb-6ef2-4dbe-a8c8-892ebe0556f4', flow: 'xtls-rprx-vision' }],
+        users: [{ uuid: '0e4a14cb-6ef2-4dbe-a8c8-892ebe0556f4' }],
         tls: {
           enabled: true,
           server_name: 'www.microsoft.com',

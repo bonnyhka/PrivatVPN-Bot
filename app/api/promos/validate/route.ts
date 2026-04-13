@@ -5,6 +5,7 @@ import { getDynamicPlans } from '@/lib/plans'
 import { validateDiscount } from '@/lib/discounts'
 import { getClientIp } from '@/lib/request-security'
 import { rateLimit } from '@/lib/rate-limit'
+import { applySystemDiscount, getPlanBasePrice, getSystemDiscountRate } from '@/lib/payments'
 
 export async function GET(req: Request) {
   try {
@@ -39,15 +40,9 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Тариф не найден' }, { status: 400 })
     }
 
-    const basePrice = Math.floor(plan.price * months)
-    let systemDiscount = 0
-    if (isGift) {
-      systemDiscount = 0.15
-    } else if (months >= 3) {
-      systemDiscount = 0.10
-    }
-
-    const priceAfterSystemDiscount = Math.floor(basePrice * (1 - systemDiscount))
+    const basePrice = getPlanBasePrice(plan.id, plan.price, months)
+    const systemDiscount = getSystemDiscountRate(months, isGift)
+    const priceAfterSystemDiscount = applySystemDiscount(basePrice, months, isGift)
     const result = await validateDiscount({
       code,
       planId,

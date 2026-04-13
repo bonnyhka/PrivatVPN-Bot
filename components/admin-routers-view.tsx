@@ -108,7 +108,7 @@ export function AdminRoutersView({ onNavigate }: AdminRoutersViewProps) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background p-4 pb-24">
+    <div className="app-screen-shell flex min-h-screen flex-col p-4 pb-24">
       {/* Header */}
       <div className="mb-6 flex items-center gap-4">
         <button

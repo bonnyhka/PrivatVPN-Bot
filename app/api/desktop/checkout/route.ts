@@ -5,6 +5,12 @@ import { validateDiscount } from '@/lib/discounts'
 import { buildSubscriptionLookupWhere } from '@/lib/security'
 import { getClientIp } from '@/lib/request-security'
 import { rateLimit } from '@/lib/rate-limit'
+import { applySystemDiscount, getPlanBasePrice } from '@/lib/payments'
+import { finalizePayment } from '@/lib/payment-fulfillment'
+import { createCrystalPayInvoice } from '@/lib/crystalpay'
+import { createHeleketInvoice } from '@/lib/heleket'
+
+type CheckoutMethod = 'crystalpay' | 'heleket'
 
 export async function POST(req: Request) {
   try {
@@ -18,8 +24,9 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const { subscriptionKey, planId, promoCode, months: rawMonths } = body
+    const { subscriptionKey, planId, promoCode, months: rawMonths, method: rawMethod, useBalance } = body
     const months = Math.max(1, parseInt(rawMonths) || 1)
+    const method: CheckoutMethod = rawMethod === 'heleket' ? 'heleket' : 'crystalpay'
 
     if (!subscriptionKey || !planId) {
       return NextResponse.json({ error: 'Missing subscriptionKey or planId' }, { status: 400 })
@@ -42,7 +49,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Тариф не найден' }, { status: 400 })
     }
 
-    let basePrice = Math.floor(plan.price * months)
+    const basePrice = getPlanBasePrice(plan.id, plan.price, months)
     let remainingValue = 0
 
     if (subscription.status === 'active' && subscription.expiresAt.getTime() > Date.now() && subscription.planId !== plan.id) {
@@ -53,10 +60,7 @@ export async function POST(req: Request) {
       }
     }
 
-    let systemDiscount = 0
-    if (months >= 3) systemDiscount = 0.1
-
-    const priceAfterSystemDiscount = Math.floor(basePrice * (1 - systemDiscount))
+    const priceAfterSystemDiscount = applySystemDiscount(basePrice, months, false)
     const discountResult = await validateDiscount({
       code: promoCode || null,
       planId,
@@ -77,39 +81,137 @@ export async function POST(req: Request) {
     }
 
     const discountedPrice = discountResult.discountedPrice
-
     const finalPrice = Math.max(0, discountedPrice - remainingValue)
+    const wantsBalance = Boolean(useBalance)
 
-    const payment = await (prisma.payment as any).create({
-      data: {
-        userId: subscription.userId,
-        planId: plan.id,
-        months,
-        amount: finalPrice,
-        status: 'pending',
-        promoCode: discountResult.discount?.code || null,
-      },
+    const { payment, payableAmount } = await prisma.$transaction(async (tx) => {
+      const freshUser = await tx.user.findUnique({
+        where: { id: subscription.userId },
+        select: { balance: true },
+      })
+
+      const availableBalance = Math.max(0, Math.floor(Number(freshUser?.balance || 0)))
+      const balanceToUse = wantsBalance ? Math.min(availableBalance, finalPrice) : 0
+      const payable = Math.max(0, finalPrice - balanceToUse)
+
+      const createdPayment = await (tx.payment as any).create({
+        data: {
+          userId: subscription.userId,
+          planId: plan.id,
+          months,
+          amount: payable,
+          balanceUsed: balanceToUse,
+          status: 'pending',
+          promoCode: discountResult.discount?.code || null,
+        },
+      })
+
+      if (balanceToUse > 0) {
+        await tx.user.update({
+          where: { id: subscription.userId },
+          data: { balance: { decrement: balanceToUse } },
+        })
+      }
+
+      return { payment: createdPayment, payableAmount: payable }
     })
 
-    const wallet = process.env.YOOMONEY_WALLET || '4100118534138676'
-    const successUrl = `${process.env.WEB_APP_URL || 'https://privatevp.space'}/payment/success`
-    const targets = `Оплата тарифа ${plan.name} (${months} мес) (PrivatVPN Desktop)`
+    if (payableAmount <= 0) {
+      await finalizePayment(payment.id, {
+        externalId: `internal:${payment.id}`,
+        paymentStatus: 'success',
+      })
 
-    const yoomoneyUrl = new URL('https://yoomoney.ru/quickpay/confirm.xml')
-    yoomoneyUrl.searchParams.append('receiver', wallet)
-    yoomoneyUrl.searchParams.append('quickpay-form', 'button')
-    yoomoneyUrl.searchParams.append('targets', targets)
-    yoomoneyUrl.searchParams.append('paymentType', 'PC')
-    yoomoneyUrl.searchParams.append('sum', finalPrice.toString())
-    yoomoneyUrl.searchParams.append('label', payment.id)
-    yoomoneyUrl.searchParams.append('successURL', successUrl)
+      const updatedSubscription = await prisma.subscription.findUnique({
+        where: { userId: subscription.userId },
+        select: {
+          id: true,
+          subscriptionUrl: true,
+        },
+      })
 
-    return NextResponse.json({
-      success: true,
-      paymentUrl: yoomoneyUrl.toString(),
-      paymentId: payment.id,
-      amount: finalPrice,
-    })
+      return NextResponse.json({
+        success: true,
+        paymentId: payment.id,
+        amount: payableAmount,
+        subscription: updatedSubscription,
+      })
+    }
+
+    const successUrl = new URL(`${process.env.WEB_APP_URL || 'https://privatevp.space'}/payment/success`)
+    successUrl.searchParams.set('paymentId', payment.id)
+    const callbackPath = method === 'heleket'
+      ? '/api/payment/heleket/notification'
+      : '/api/payment/crystalpay/notification'
+    const callbackUrl = new URL(`${process.env.WEB_APP_URL || 'https://privatevp.space'}${callbackPath}`)
+
+    try {
+      const invoice = method === 'heleket'
+          ? await createHeleketInvoice({
+            amount: payableAmount,
+            orderId: payment.id,
+            successUrl: successUrl.toString(),
+            returnUrl: `${process.env.WEB_APP_URL || 'https://privatevp.space'}/`,
+            callbackUrl: callbackUrl.toString(),
+            additionalData: payment.id,
+            lifetimeSeconds: 60 * 60,
+          })
+        : await createCrystalPayInvoice({
+            amount: payableAmount,
+            description: `Оплата тарифа ${plan.name} (${months} мес) - PrivatVPN Desktop`,
+            redirectUrl: successUrl.toString(),
+            callbackUrl: callbackUrl.toString(),
+            extra: payment.id,
+            lifetimeMinutes: 60,
+          })
+
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          externalId: `${method === 'heleket' ? 'heleket' : 'crystal'}:${invoice.id}`,
+          updatedAt: new Date(),
+        },
+      })
+
+      return NextResponse.json({
+        success: true,
+        paymentUrl: invoice.url,
+        paymentId: payment.id,
+        amount: payableAmount,
+      })
+    } catch (invoiceError: any) {
+      console.error(`Desktop ${method} invoice error:`, invoiceError)
+      const balanceUsed = Number((payment as any).balanceUsed || 0)
+      if (balanceUsed > 0) {
+        await prisma.$transaction([
+          prisma.user.update({
+            where: { id: subscription.userId },
+            data: { balance: { increment: balanceUsed } },
+          }),
+          prisma.payment.update({
+            where: { id: payment.id },
+            data: {
+              status: 'failed',
+              balanceUsed: 0,
+              updatedAt: new Date(),
+            },
+          }),
+        ])
+      } else {
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: 'failed',
+            updatedAt: new Date(),
+          },
+        })
+      }
+
+      return NextResponse.json({
+        error: `Не удалось создать счёт ${method === 'heleket' ? 'Heleket' : 'CrystalPay'}`,
+        message: invoiceError?.message,
+      }, { status: 502 })
+    }
   } catch (error: any) {
     console.error('Desktop checkout error:', error)
     return NextResponse.json({

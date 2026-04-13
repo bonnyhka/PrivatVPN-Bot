@@ -50,3 +50,8 @@ core
 *.tar.gz
 *.zip
 *.tsbuildinfo
+
+# Local backups and obsolete scripts
+backups/
+scripts/obsolete/
+*.js

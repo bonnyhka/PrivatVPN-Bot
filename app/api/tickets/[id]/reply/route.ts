@@ -3,6 +3,7 @@ import prisma from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { rateLimit } from '@/lib/rate-limit'
 import { getClientIp, ticketReplySchema } from '@/lib/request-security'
+import { notifyTicketReply } from '@/lib/ticket-telegram'
 
 // POST /api/tickets/[id]/reply - add a message to a ticket
 export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
@@ -40,7 +41,17 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
 
     const ticket = await prisma.ticket.findUnique({
       where: { id: params.id },
-      select: { id: true, userId: true, status: true },
+      select: {
+        id: true,
+        userId: true,
+        status: true,
+        subject: true,
+        user: {
+          select: {
+            telegramId: true,
+          },
+        },
+      },
     })
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 })
@@ -73,6 +84,13 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
             : {}),
       },
     })
+
+    if (isAdmin) {
+      await notifyTicketReply({
+        telegramId: ticket.user.telegramId,
+        subject: ticket.subject,
+      })
+    }
 
     return NextResponse.json(msg)
   } catch (error) {

@@ -33,6 +33,19 @@ const NAV: NavItem[] = [
   { view: 'admin-support', label: 'Поддержка', icon: Headphones },
 ]
 
+const VIEW_DESCRIPTIONS: Partial<Record<AppView, string>> = {
+  admin: 'Общая картина по сервису.',
+  'admin-info': 'Состояние сети и диагностика.',
+  'admin-locations': 'Узлы и развёртывание.',
+  'admin-users': 'Пользователи и подписки.',
+  'admin-keys': 'Ключи и доступы.',
+  'admin-pricing': 'Тарифы и цены.',
+  'admin-security': 'Защита и проверки.',
+  'admin-discounts': 'Промокоды и скидки.',
+  'admin-orders': 'Заказы устройств.',
+  'admin-support': 'Тикеты и поддержка.',
+}
+
 function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(' ')
 }
@@ -169,29 +182,44 @@ export function DesktopAdminApp() {
   const active = NAV.find((n) => n.view === view) || NAV[0]
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(1200px_circle_at_20%_-10%,rgba(56,189,248,0.10),transparent_55%),radial-gradient(1000px_circle_at_90%_10%,rgba(99,102,241,0.12),transparent_60%),radial-gradient(900px_circle_at_40%_120%,rgba(16,185,129,0.06),transparent_60%)]" />
-      <div className="relative mx-auto max-w-[1600px] px-4 py-4 md:py-6">
+    <div className="min-h-screen bg-[#070c16] text-foreground">
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(1100px_circle_at_14%_-8%,rgba(59,130,246,0.18),transparent_52%),radial-gradient(900px_circle_at_92%_0%,rgba(34,197,94,0.08),transparent_46%),linear-gradient(180deg,rgba(8,12,24,0.96),rgba(5,8,18,1))]" />
+      <div className="relative mx-auto max-w-[1620px] px-4 py-4 md:px-5 md:py-6">
         <div className="flex flex-col gap-4 md:flex-row md:gap-6">
-          <aside className="md:w-[340px] shrink-0 md:sticky md:top-6 self-start">
-            <div className="rounded-2xl border border-border/80 bg-card/80 p-4 shadow-xl shadow-black/20 backdrop-blur">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-sm font-extrabold">PrivatVPN</div>
-                  <div className="text-[11px] text-muted-foreground">Admin panel</div>
+          <aside className="md:w-[320px] shrink-0 md:sticky md:top-6 self-start">
+            <div className="overflow-hidden rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(16,24,38,0.96),rgba(9,14,26,0.92))] p-4 shadow-[0_30px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+              <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="rounded-2xl border border-primary/20 bg-primary/[0.10] px-3 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-transparent">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src="/images/privatvpn-logo.png" alt="PrivatVPN" className="h-11 w-11 object-contain" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-extrabold tracking-tight text-foreground">PrivatVPN</div>
+                          <div className="mt-0.5 text-[11px] font-medium text-primary/80">Desktop Admin</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/20 hover:text-foreground"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Выйти
+                  </button>
                 </div>
-                <button
-                  onClick={handleLogout}
-                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Выйти
-                </button>
-              </div>
 
-              <div className="mt-4 rounded-xl border border-border/60 bg-background/40 px-3 py-2">
-                <div className="text-xs font-bold">{user.displayName || user.username || user.telegramId}</div>
-                <div className="text-[11px] text-muted-foreground">роль: {user.role}</div>
+                <div className="mt-4 grid gap-3">
+                  <div className="rounded-2xl border border-white/8 bg-black/20 px-3.5 py-3">
+                    <div className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Аккаунт</div>
+                    <div className="mt-1 text-sm font-bold">{user.displayName || user.username || user.telegramId}</div>
+                    <div className="mt-1 text-[11px] text-muted-foreground">Роль: {user.role}</div>
+                  </div>
+                </div>
               </div>
 
               <nav className="mt-4 grid gap-1.5">
@@ -203,14 +231,22 @@ export function DesktopAdminApp() {
                       key={item.view}
                       onClick={() => setView(item.view)}
                       className={cx(
-                        'flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors',
+                        'group flex items-center gap-3 rounded-2xl border px-3.5 py-3 text-left text-sm transition-all',
                         isActive
-                          ? 'border-primary/30 bg-primary/10 text-foreground'
-                          : 'border-border bg-background/30 text-muted-foreground hover:text-foreground hover:border-primary/20'
+                          ? 'border-primary/30 bg-primary/10 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
+                          : 'border-white/8 bg-white/[0.025] text-muted-foreground hover:border-primary/15 hover:bg-white/[0.04] hover:text-foreground'
                       )}
                     >
-                      <Icon className={cx('h-4 w-4', isActive && 'text-primary')} />
-                      <span className="font-semibold">{item.label}</span>
+                      <div className={cx(
+                        'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border',
+                        isActive ? 'border-primary/20 bg-primary/12 text-primary' : 'border-white/8 bg-black/15 text-muted-foreground group-hover:text-primary'
+                      )}>
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1 overflow-hidden">
+                        <div className="font-semibold">{item.label}</div>
+                      </div>
+                      {isActive && <div className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary" />}
                     </button>
                   )
                 })}
@@ -219,10 +255,26 @@ export function DesktopAdminApp() {
           </aside>
 
           <main className="flex-1">
-            <div className="rounded-2xl border border-border/80 bg-card/80 p-4 md:p-6 shadow-xl shadow-black/20 backdrop-blur">
-              <div className="mb-4 flex items-center gap-3">
-                <active.icon className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-extrabold">{active.label}</h2>
+            <div className="overflow-hidden rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(15,22,36,0.96),rgba(10,15,26,0.92))] p-4 shadow-[0_30px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl md:p-6">
+              <div className="mb-6 flex flex-col gap-3 border-b border-white/8 pb-5 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10 text-primary">
+                    <active.icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-extrabold tracking-tight">{active.label}</h2>
+                    <div className="mt-1 text-sm text-muted-foreground">
+                      {VIEW_DESCRIPTIONS[active.view] || 'Раздел управления сервисом.'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-start md:self-auto">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/10 px-3 py-1.5 text-[11px] font-semibold text-emerald-300">
+                    <span className="h-2 w-2 rounded-full bg-emerald-300" />
+                    Online
+                  </div>
+                </div>
               </div>
 
               <div className="desktop-admin-embed">
@@ -244,4 +296,3 @@ export function DesktopAdminApp() {
     </div>
   )
 }
-

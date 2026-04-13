@@ -1,17 +1,14 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 require('dotenv').config();
 const { Telegraf, Markup } = require('telegraf');
 const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
-const path = require('path');
+const { getBroadcastStartText } = require('../lib/telegram-location-summary');
 
 const prisma = new PrismaClient();
 const token = process.env.BOT_TOKEN;
 const bot = new Telegraf(token);
-
-const START_TEXT = '<b>Добро пожаловать в PrivatVPN! 🛡️</b>\n\n' +
-  'Надежный сервис для безопасного и свободного доступа в сеть.\n' +
-  'Текущие локации: 🇩🇪 Германия | 🇳🇱 Нидерланды\n\n' +
-  '👇 <i>Выберите нужное действие в меню ниже:</i>';
 
 const WEB_APP_URL = process.env.WEB_APP_URL || 'https://privatevp.space/';
 const START_KEYBOARD = Markup.inlineKeyboard([
@@ -36,13 +33,14 @@ async function broadcast() {
   console.log(`Starting broadcast to ${users.length} users...`);
 
   const photoPath = path.join(__dirname, 'welcome-banner.png');
+  const startText = await getBroadcastStartText(prisma);
   let success = 0;
   let failed = 0;
 
   for (const user of users) {
     try {
       await bot.telegram.sendPhoto(user.telegramId, { source: photoPath }, {
-        caption: START_TEXT,
+        caption: startText,
         parse_mode: 'HTML',
         ...START_KEYBOARD
       });

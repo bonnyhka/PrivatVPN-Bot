@@ -9,7 +9,7 @@ import { AnimatedContainer, AnimatedItem } from '@/components/ui/animated-view'
 const FAQ = [
   {
     q: 'VPN не подключается, что делать?',
-    a: 'Сначала обновите конфигурацию в приложении (кнопка «Обновить» или «Update»). Появятся резервные узлы с пометкой [ALT] (порты 448, 12443) и защитой от DPI (TLS фрагментация). Если основные заблокированы, альтернативные обычно работают. Также попробуйте переключиться на ShadowSocks (порт 15113).',
+    a: 'Сначала обновите конфигурацию в приложении (кнопка «Обновить» или «Update»). Появятся резервные узлы с пометкой [ALT] для сложных сетей. Если основные недоступны, альтернативные обычно работают. Также попробуйте переключиться на ShadowSocks: порт зависит от тарифа и подтягивается автоматически после обновления подписки.',
   },
   {
     q: 'Как добавить подписку в приложение?',
@@ -33,11 +33,11 @@ const FAQ = [
   },
   {
     q: 'Что такое VLESS и ShadowSocks?',
-    a: 'Оба — протоколы VPN. VLESS Reality лучше обходит блокировки DPI и выглядит как обычный HTTPS. Наша реализация использует фрагментацию TLS для скрытия трафика. ShadowSocks быстрее на нестабильных соединениях. Попробуйте оба и выберите лучший для вас.',
+    a: 'Оба — протоколы VPN. VLESS Reality обычно стабильнее в строгих сетях и выглядит как обычный HTTPS. ShadowSocks часто быстрее на нестабильных соединениях. Попробуйте оба и выберите лучший для вас.',
   },
   {
     q: '📱 Что такое узлы «Мобильный» (Hysteria2)?',
-    a: 'Hysteria2 — специальный протокол QUIC/UDP для обхода сильного глушения мобильного интернета (МТС, Билайн, Теле2). Если серверы тормозят в метро — переключитесь на узел 📱 [Мобильный].\n\n⚠️ Не рекомендуется для ПК и онлайн-игр (агрессивная передача пакетов вызывает скачки пинга). Используйте VLESS на компьютерах.',
+    a: 'Hysteria2 — протокол QUIC/UDP для сетей с потерями и нестабильной связью. Если соединение проседает — попробуйте узел с пометкой 📱.\n\n⚠️ Не рекомендуется для ПК и онлайн-игр (агрессивная передача пакетов вызывает скачки пинга). Используйте VLESS на компьютерах.',
   },
 ]
 
@@ -212,7 +212,7 @@ export function SupportView() {
     const statusCfg = STATUS_CONFIG[activeTicket.status] || STATUS_CONFIG.open
     const StatusIcon = statusCfg.icon
     return (
-      <div className="min-h-screen px-4 pb-36 pt-6">
+      <div className="min-h-screen px-4 pb-[calc(env(safe-area-inset-bottom,0px)+24px)] pt-6">
         <button onClick={() => setActiveTicket(null)} className="mb-4 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
           ← Назад к поддержке
         </button>
@@ -230,7 +230,7 @@ export function SupportView() {
         </div>
 
         {activeTicket.status !== 'resolved' && activeTicket.status !== 'closed' && (
-          <div className="fixed bottom-[88px] left-4 right-4 space-y-2">
+          <div className="sticky bottom-[calc(env(safe-area-inset-bottom,0px)+8px)] z-20 space-y-2 rounded-2xl bg-gradient-to-t from-background/95 via-background/80 to-transparent pt-4">
             {pendingImageUrl && (
               <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -327,7 +327,7 @@ export function SupportView() {
               'Если VPN не работает — обновите подписку, чтобы получить резервные порты [ALT]',
               'Пинг скачет? Попробуйте переключить ноду',
               'Медленно? Попробуйте ShadowSocks вместо VLESS',
-              '📱 Глушат сеть? Выберите узел «[Мобильный]» — это Hysteria2/UDP, не пробиваемый DPI',
+              'Если связь нестабильна — попробуйте узел с пометкой 📱 или переключитесь на другой протокол',
             ].map((tip, i) => (
               <div key={i} className="flex items-start gap-2.5 text-xs text-muted-foreground">
                 <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-400/15 text-[9px] font-bold text-amber-400">{i + 1}</span>

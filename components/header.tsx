@@ -43,12 +43,12 @@ export function Header({ user, onNavigate }: HeaderProps) {
         <button
           id="header-support"
           onClick={() => onNavigate('support')}
-          className="mt-3 shrink-0 rounded-[22px] border border-white/8 bg-white/5 px-4 py-3 text-[11px] font-medium text-muted-foreground backdrop-blur-md transition-colors hover:bg-white/7 hover:text-foreground"
+          className="mt-3 flex shrink-0 items-center gap-2.5 rounded-[22px] border border-white/8 bg-white/5 px-3 py-2 text-[12px] font-medium text-muted-foreground backdrop-blur-md transition-colors hover:bg-white/7 hover:text-foreground"
         >
-          <span className="flex items-center gap-1.5">
-            <Headphones className="h-3.5 w-3.5" />
-            Помощь
-          </span>
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 shadow-[0_0_10px_rgba(var(--primary),0.3)]">
+            <Headphones className="h-3.5 w-3.5 text-primary" />
+          </div>
+          <span className="pr-1">Помощь</span>
         </button>
       </div>
     </div>

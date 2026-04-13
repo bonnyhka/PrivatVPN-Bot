@@ -65,9 +65,9 @@ async function setup() {
                 'security': 'reality',
                 'realitySettings': {
                   'show': false,
-                  'dest': 'www.google.com:443',
+                  'dest': 'dl.google.com:443',
                   'xver': 0,
-                  'serverNames': ['www.google.com', 'google.com'],
+                  'serverNames': ['dl.google.com', 'google.com'],
                   'privateKey': privateKey,
                   'shortIds': ['9f10e304859bc070']
                 }
@@ -106,7 +106,7 @@ async function setup() {
                 vlessPort: 443,
                 vlessReality: true,
                 vlessRealityPublicKey: publicKey,
-                vlessRealitySni: 'www.google.com',
+                vlessRealitySni: 'dl.google.com',
                 vlessRealityShortId: '9f10e304859bc070',
                 ssPort: 8443,
                 ssPassword: bootstrapSsPassword
@@ -124,7 +124,7 @@ async function setup() {
                 vlessPort: 443,
                 vlessReality: true,
                 vlessRealityPublicKey: publicKey,
-                vlessRealitySni: 'www.google.com',
+                vlessRealitySni: 'dl.google.com',
                 vlessRealityShortId: '9f10e304859bc070',
                 ssPort: 8443,
                 ssPassword: bootstrapSsPassword

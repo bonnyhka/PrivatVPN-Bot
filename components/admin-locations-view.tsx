@@ -21,9 +21,11 @@ export function AdminLocationsView({ onNavigate }: AdminLocationsViewProps) {
     country: '',
     flag: '',
     host: '',
+    sshUser: 'root',
     sshPass: '',
     isActive: true,
   })
+  const [autoProvision, setAutoProvision] = useState(true)
   /** '' | preset `country` | `COUNTRY_PRESET_CUSTOM` */
   const [countryListValue, setCountryListValue] = useState<string>('')
 
@@ -65,13 +67,16 @@ export function AdminLocationsView({ onNavigate }: AdminLocationsViewProps) {
         country: loc.country || '',
         flag: loc.flag && /^[A-Za-z]{2}$/.test(String(loc.flag).trim()) ? String(loc.flag).trim().toUpperCase() : '',
         host: loc.host || '',
+        sshUser: loc.sshUser || 'root',
         sshPass: loc.sshPass || '',
         isActive: loc.isActive ?? true,
       })
+      setAutoProvision(false)
     } else {
       setEditingLoc(null)
       setCountryListValue('')
-      setFormData({ country: '', flag: '', host: '', sshPass: '', isActive: true })
+      setFormData({ country: '', flag: '', host: '', sshUser: 'root', sshPass: '', isActive: true })
+      setAutoProvision(true)
     }
     setIsModalOpen(true)
   }
@@ -95,12 +100,14 @@ export function AdminLocationsView({ onNavigate }: AdminLocationsViewProps) {
     if (!formData.country?.trim() || !formData.host?.trim()) return
 
     setLoading(true)
+    let savedLocationId = ''
     try {
-      let res;
+      let res
       const payload = {
         country: formData.country.trim(),
         flag: formData.flag.trim(),
         host: formData.host.trim(),
+        sshUser: formData.sshUser.trim() || 'root',
         sshPass: formData.sshPass,
         isActive: formData.isActive,
       }
@@ -123,10 +130,21 @@ export function AdminLocationsView({ onNavigate }: AdminLocationsViewProps) {
         alert('Ошибка сохранения: ' + (errorData.error || 'Неизвестная ошибка'))
         return
       }
+      const savedLocation = await res.json()
+      savedLocationId = savedLocation?.id || editingLoc?.id || ''
       setIsModalOpen(false)
       await fetchLocations()
     } finally {
       setLoading(false)
+    }
+
+    if (autoProvision && savedLocationId) {
+      await deployLocation(savedLocationId, {
+        skipConfirm: true,
+        initialLog: editingLoc
+          ? 'Сервер сохранён. Запускаю автоматическую синхронизацию...\n'
+          : 'Сервер создан. Запускаю автоматическую установку и настройку...\n',
+      })
     }
   }
 
@@ -141,12 +159,15 @@ export function AdminLocationsView({ onNavigate }: AdminLocationsViewProps) {
     }
   }
 
-  const deployLocation = async (id: string) => {
-    if (!confirm('Запустить установку/обновление Sing-box на этом сервере?')) return
+  const deployLocation = async (
+    id: string,
+    options?: { skipConfirm?: boolean; initialLog?: string }
+  ) => {
+    if (!options?.skipConfirm && !confirm('Запустить установку/обновление Sing-box на этом сервере?')) return
     
     // Optimistic UI loading
     setLocations(locs => locs.map(l => l.id === id ? { ...l, isDeploying: true } : l))
-    setDeployLogs('Starting deployment...\n')
+    setDeployLogs(options?.initialLog || 'Starting deployment...\n')
     setIsLogModalOpen(true)
     
     try {
@@ -183,7 +204,7 @@ export function AdminLocationsView({ onNavigate }: AdminLocationsViewProps) {
   }
 
   return (
-    <AnimatedContainer className="min-h-screen px-4 pb-24 pt-6 bg-background">
+    <AnimatedContainer className="app-screen-shell min-h-screen px-4 pb-24 pt-6">
       {/* Header */}
       <AnimatedItem className="flex items-center gap-3 mb-6">
         <button
@@ -320,6 +341,10 @@ export function AdminLocationsView({ onNavigate }: AdminLocationsViewProps) {
                 <input type="text" value={formData.host} onChange={e => setFormData({...formData, host: e.target.value})} className="w-full rounded-xl bg-secondary px-3 py-2 font-mono text-sm text-foreground outline-none border border-transparent focus:border-primary/50" />
               </div>
               <div>
+                <label className="mb-1 text-xs font-semibold text-muted-foreground block">SSH Пользователь</label>
+                <input type="text" value={formData.sshUser} onChange={e => setFormData({...formData, sshUser: e.target.value})} className="w-full rounded-xl bg-secondary px-3 py-2 font-mono text-sm text-foreground outline-none border border-transparent focus:border-primary/50" />
+              </div>
+              <div>
                 <label className="mb-1 text-xs font-semibold text-muted-foreground block">SSH Пароль</label>
                 <input type="text" value={formData.sshPass} onChange={e => setFormData({...formData, sshPass: e.target.value})} className="w-full rounded-xl bg-secondary px-3 py-2 font-mono text-sm text-foreground outline-none border border-transparent focus:border-primary/50" />
               </div>
@@ -327,11 +352,17 @@ export function AdminLocationsView({ onNavigate }: AdminLocationsViewProps) {
                 <input type="checkbox" checked={formData.isActive} onChange={e => setFormData({...formData, isActive: e.target.checked})} className="accent-primary" />
                 <span className="text-sm font-semibold text-foreground">Сервер Активен</span>
               </label>
+              <label className="flex items-center gap-2 pb-1">
+                <input type="checkbox" checked={autoProvision} onChange={e => setAutoProvision(e.target.checked)} className="accent-primary" />
+                <span className="text-sm font-semibold text-foreground">
+                  {editingLoc ? 'Сразу синхронизировать после сохранения' : 'Сразу установить и настроить после сохранения'}
+                </span>
+              </label>
               
               {!editingLoc && (
                 <div className="mt-1 rounded-xl border border-border bg-secondary/40 p-3">
                   <p className="text-[10px] font-medium leading-relaxed text-muted-foreground">
-                    При создании сервера автоматически выдаются ключи VLESS Reality и UUID.
+                    При создании сервера автоматически выдаются ключи VLESS Reality и UUID, а после сохранения можно сразу развернуть конфиг и первичную диагностику.
                   </p>
                 </div>
               )}
@@ -341,9 +372,11 @@ export function AdminLocationsView({ onNavigate }: AdminLocationsViewProps) {
               <button
                 onClick={saveLocation}
                 className="flex-1 rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20 disabled:opacity-50"
-                disabled={!countryListValue || !formData.country?.trim() || !formData.host?.trim()}
+                disabled={!countryListValue || !formData.country?.trim() || !formData.host?.trim() || !formData.sshPass?.trim()}
               >
-                Сохранить
+                {autoProvision
+                  ? (editingLoc ? 'Сохранить и синхронизировать' : 'Сохранить и установить')
+                  : 'Сохранить'}
               </button>
             </div>
           </div>

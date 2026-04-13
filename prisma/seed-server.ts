@@ -19,7 +19,7 @@ async function main() {
       load: 12,
       ssPort: 8443,
       ssPassword: bootstrapSsPassword,
-      ssMethod: 'chacha20-ietf-poly1305',
+      ssMethod: 'aes-256-gcm',
       vlessUuid: bootstrapUuid,
       vlessPort: 443,
       vlessNetwork: 'tcp', // Reality uses TCP
@@ -27,7 +27,7 @@ async function main() {
       vlessReality: true,
       vlessRealityPublicKey: 'cxMEjVYc7Jse_qSmWvjgaBOS1wYxtn-2th4VElyrfmk',
       vlessRealityShortId: '8e70f204859bc060', // Random 8-byte hex
-      vlessRealitySni: 'www.microsoft.com', sshUser: 'root', sshPass: process.env.VPN_NODE_PASSWORD || '',
+      vlessRealitySni: 'dl.google.com', sshUser: 'root', sshPass: process.env.VPN_NODE_PASSWORD || '',
     },
     create: {
       id: 'germany1',
@@ -40,7 +40,7 @@ async function main() {
       load: 12,
       ssPort: 8443,
       ssPassword: bootstrapSsPassword,
-      ssMethod: 'chacha20-ietf-poly1305',
+      ssMethod: 'aes-256-gcm',
       vlessUuid: bootstrapUuid,
       vlessPort: 443,
       vlessNetwork: 'tcp',
@@ -48,7 +48,7 @@ async function main() {
       vlessReality: true,
       vlessRealityPublicKey: 'cxMEjVYc7Jse_qSmWvjgaBOS1wYxtn-2th4VElyrfmk',
       vlessRealityShortId: '8e70f204859bc060',
-      vlessRealitySni: 'www.microsoft.com', sshUser: 'root', sshPass: process.env.VPN_NODE_PASSWORD || '',
+      vlessRealitySni: 'dl.google.com', sshUser: 'root', sshPass: process.env.VPN_NODE_PASSWORD || '',
     } as any
   })
 

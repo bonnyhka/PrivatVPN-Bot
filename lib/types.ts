@@ -128,3 +128,4 @@ export type AppView =
   | 'market'
   | 'documents'
   | 'connect'
+  | 'service-status'

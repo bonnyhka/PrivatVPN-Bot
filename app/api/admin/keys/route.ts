@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import crypto from 'crypto'
 import { buildSubscriptionUrl, createSubscriptionToken } from '@/lib/security'
+import { finalizePayment, findRecentUnconfirmedPaymentForPlan } from '@/lib/payment-fulfillment'
 
 function parseExpiryDate(input: string) {
   if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
@@ -80,6 +81,14 @@ export async function POST(req: Request) {
     })
 
     const { trafficUsed, ...restSub } = sub as any
+
+    const pendingPayment = await findRecentUnconfirmedPaymentForPlan(userId, planId)
+    if (pendingPayment) {
+      await finalizePayment(pendingPayment.id, {
+        externalId: `manual:${sub.id}`,
+        paymentStatus: 'success',
+      })
+    }
     
     // Sync to servers
     require('@/lib/sync').triggerSync()

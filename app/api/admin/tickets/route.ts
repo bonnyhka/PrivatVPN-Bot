@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { notifyTicketStatusChange } from '@/lib/ticket-telegram'
 
 // GET /api/admin/tickets - all tickets for admin
 export async function GET() {
@@ -54,7 +55,19 @@ export async function PATCH(req: Request) {
     const { ticketId, status } = await req.json()
     
     // Get previous state
-    const oldTicket = await prisma.ticket.findUnique({ where: { id: ticketId } })
+    const oldTicket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: {
+        id: true,
+        status: true,
+        subject: true,
+        user: {
+          select: {
+            telegramId: true,
+          },
+        },
+      },
+    })
     if (!oldTicket) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
     const updated = await prisma.ticket.update({
@@ -74,6 +87,12 @@ export async function PATCH(req: Request) {
           data: { ticketId, body: `Тикет ${status === 'closed' ? 'закрыт' : 'решён'}`, isAdmin: true, isSystem: true } as any
         })
       }
+
+      await notifyTicketStatusChange({
+        telegramId: oldTicket.user.telegramId,
+        subject: oldTicket.subject,
+        status,
+      })
     }
 
     return NextResponse.json(updated)

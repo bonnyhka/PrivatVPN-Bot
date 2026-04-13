@@ -39,7 +39,7 @@ export async function GET(req: Request) {
           specs: JSON.stringify([
             { label: 'Стандарт', value: 'Wi-Fi 6 (802.11ax)' },
             { label: 'Порты', value: '1 Гбит/с WAN/LAN' },
-            { label: 'VPN Протоколы', value: 'VLESS Reality, ShadowSocks' },
+            { label: 'VPN Протоколы', value: 'VLESS Reality, Hysteria 2' },
             { label: 'Покрытие', value: 'до 100 м²' }
           ]),
           imageUrl: '/images/router-hero.png'

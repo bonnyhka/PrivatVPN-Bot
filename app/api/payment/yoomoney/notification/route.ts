@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import crypto from 'crypto'
-import { sendTelegramPhoto } from '@/lib/telegram'
-import path from 'path'
-import { incrementDiscountUsage } from '@/lib/discounts'
-import { buildSubscriptionUrl, createSubscriptionToken } from '@/lib/security'
+import { finalizePayment } from '@/lib/payment-fulfillment'
+import { isSuccessfulPaymentStatus } from '@/lib/payments'
 
 export async function POST(req: Request) {
   try {
@@ -55,169 +53,25 @@ export async function POST(req: Request) {
       return new Response('Payment not found', { status: 404 })
     }
 
-    if (payment.status === 'success') {
+    if (isSuccessfulPaymentStatus(payment.status)) {
       return new Response('Already processed', { status: 200 })
     }
 
-    // Update payment status
-    await prisma.payment.update({
-      where: { id: payment.id },
-      data: {
-        status: 'success',
-        externalId: operation_id,
-        updatedAt: new Date()
-      }
-    })
-
-    if (payment.promoCode) {
-      await incrementDiscountUsage(payment.promoCode)
-    }
-
-    // Activate subscription or Create Gift
-    const user = payment.user
-
-    if (payment.isGift) {
-      // Resolve recipient if username provided
-      let toId = null
-      if (payment.receiverUsername) {
-        const normalizedUsername = payment.receiverUsername.toLowerCase()
-        const recipient = await prisma.user.findFirst({
-          where: { username: normalizedUsername }
-        })
-        if (recipient) {
-          toId = recipient.id
-        }
-      }
-
-      // Create Gift record
-      const giftCode = `PVPN-${crypto.randomBytes(4).toString('hex').toUpperCase()}`
-      await (prisma.gift as any).create({
-        data: {
-          code: giftCode,
-          planId: payment.planId,
-          months: payment.months || 1,
-          fromId: user.id,
-          toId: toId,
-          toUsername: payment.receiverUsername || null,
-          isPreOrder: payment.isPreOrder
-        }
+    const receivedAmount = Number(amount)
+    const expectedAmount = Number(payment.amount)
+    if (!Number.isFinite(receivedAmount) || Math.abs(receivedAmount - expectedAmount) > 0.01) {
+      console.error('YooMoney amount mismatch', {
+        paymentId: payment.id,
+        receivedAmount,
+        expectedAmount,
       })
-
-      // Notify Buyer with the code or confirmation
-      let botMessage = `<b>🎁 Ваш подарок готов!</b>\n\nВы успешно приобрели подписку в подарок.`
-      if (payment.isPreOrder) {
-        botMessage = `<b>📅 Предзаказ подарка оформлен!</b>\n\nВы забронировали подписку для друга. Она активируется автоматически после окончания его текущего тарифа.`
-      }
-      if (payment.receiverUsername) {
-        botMessage += `\n\nПолучатель: <b>@${payment.receiverUsername}</b>`
-        if (toId) {
-          botMessage += `\n<i>Пользователь найден, подарок будет активирован при его входе в приложение.</i>`
-        } else {
-          botMessage += `\n<i>Пользователь пока не зарегистрирован в боте. Перешлите ему код активации ниже:</i>`
-        }
-      }
-      
-      botMessage += `\n\nКод активации:\n<code>${giftCode}</code>\n\n<i>Код активации действителен бессрочно.</i>`
-      
-      const { sendTelegramMessage } = require('@/lib/telegram')
-      await sendTelegramMessage(user.telegramId, botMessage)
-      
-      return new Response('OK', { status: 200 })
+      return new Response('Amount mismatch', { status: 409 })
     }
 
-    const vlessUuid = user.subscription?.vlessUuid || crypto.randomUUID()
-    const linkToken = createSubscriptionToken()
-    
-    let expiresAt = new Date()
-    const monthsMultiplier = payment.months || 1
-    const additionalMs = monthsMultiplier * 30 * 24 * 60 * 60 * 1000
-
-    if (user.subscription && user.subscription.planId === payment.planId && user.subscription.status === 'active') {
-      // Extending the SAME active plan: add time to the existing expiration
-      const baseTime = Math.max(Date.now(), user.subscription.expiresAt.getTime())
-      expiresAt = new Date(baseTime + additionalMs)
-    } else {
-      // Buying a DIFFERENT plan (upgrading/downgrading): reset expiration
-      expiresAt = new Date(Date.now() + additionalMs)
-    }
-
-    await prisma.subscription.upsert({
-      where: { userId: user.id },
-      update: {
-        planId: payment.planId,
-        status: 'active',
-        expiresAt,
-        vlessUuid,
-        subscriptionUrl: buildSubscriptionUrl(linkToken),
-        trafficUsed: 0,
-        isManual: false,
-        lastTrafficReset: new Date(),
-        updatedAt: new Date()
-      },
-      create: {
-        userId: user.id,
-        planId: payment.planId,
-        status: 'active',
-        expiresAt,
-        vlessUuid,
-        trafficUsed: 0,
-        lastTrafficReset: new Date(),
-        subscriptionUrl: buildSubscriptionUrl(linkToken),
-        isManual: false,
-      }
+    await finalizePayment(payment.id, {
+      externalId: operation_id || `yoomoney:${payment.id}`,
+      paymentStatus: 'success',
     })
-
-    // Handle referral reward if first purchase
-    if (user.referredById) {
-      const existingReferral = await prisma.referral.findFirst({
-        where: { referredId: user.id }
-      })
-
-      if (!existingReferral) {
-        const rewardAmount = 30
-        await prisma.$transaction([
-          prisma.user.update({
-            where: { id: user.referredById },
-            data: { balance: { increment: rewardAmount } }
-          }),
-          prisma.referral.create({
-            data: {
-              referrerId: user.referredById,
-              referredId: user.id,
-              amount: rewardAmount,
-              status: 'credited'
-            }
-          })
-        ])
-      } else if (existingReferral.status === 'pending') {
-        const rewardAmount = existingReferral.amount
-        await prisma.$transaction([
-          prisma.user.update({
-            where: { id: user.referredById },
-            data: { balance: { increment: rewardAmount } }
-          }),
-          prisma.referral.update({
-            where: { id: existingReferral.id },
-            data: { status: 'credited' }
-          })
-        ])
-
-        // Notify Referrer
-        const referrer = await prisma.user.findUnique({ where: { id: user.referredById } })
-        if (referrer && referrer.telegramId) {
-          const bannerPath = path.join(process.cwd(), 'public', 'images', 'referral-banner.png')
-          const friendDisplayName = user.username ? `@${user.username}` : (user.firstName || 'Друг')
-          const caption = `<b>💖 Вместе теплее!</b>\n\nВаш друг <b>${friendDisplayName}</b> подключил PrivatVPN по вашей ссылке. +${rewardAmount} руб на баланс!\n\n<i>Приглашайте друзей — получайте бонусы за каждого!</i>`
-          
-          await sendTelegramPhoto(referrer.telegramId, bannerPath, caption, {
-            inline_keyboard: [[{ text: '👥 Пригласить еще', web_app: { url: process.env.WEB_APP_URL || 'https://privatevp.space/' } }]]
-          }).catch(console.error)
-        }
-      }
-    }
-    
-    // Trigger sync to bare-metal servers
-    require('@/lib/sync').triggerSync()
 
     return new Response('OK', { status: 200 })
 

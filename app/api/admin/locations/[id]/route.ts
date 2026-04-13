@@ -9,7 +9,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     const { id } = await params
     const body = await req.json()
-    const { country, flag, host, sshPass, isActive } = body
+    const { country, flag, host, sshUser, sshPass, isActive } = body
 
     const existing = await prisma.location.findUnique({ where: { id } })
     if (!existing) {
@@ -38,6 +38,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         country: nextCountry,
         flag: nextFlag,
         ...(host !== undefined && { host }),
+        ...(sshUser !== undefined && { sshUser: String(sshUser).trim() || 'root' }),
         ...(sshPass !== undefined && { sshPass }),
         ...(isActive !== undefined && { isActive }),
       },

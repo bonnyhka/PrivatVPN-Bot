@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { getSession } from '@/lib/auth'
+import { getAppHourBucket, getStartOfAppDay, getStartOfAppHour } from '@/lib/day-boundary'
 import fs from 'fs'
 import path from 'path'
 
@@ -29,11 +30,8 @@ export async function GET() {
     }
 
     const now = new Date()
-    const currentHourStart = new Date(now)
-    currentHourStart.setMinutes(0, 0, 0)
-
-    const startOfToday = new Date(now)
-    startOfToday.setHours(0, 0, 0, 0)
+    const currentHourStart = getStartOfAppHour(now)
+    const startOfToday = getStartOfAppDay(now)
 
     const startOf24Hours = new Date(currentHourStart.getTime() - 23 * 60 * 60 * 1000)
     const syncStatus = readTrafficSyncStatus()
@@ -77,9 +75,7 @@ export async function GET() {
     }
 
     logs.forEach((log: any) => {
-      const bucket = new Date(log.timestamp)
-      bucket.setMinutes(0, 0, 0)
-      const key = bucket.toISOString()
+      const key = getAppHourBucket(new Date(log.timestamp))
       hourlyData[key] = (hourlyData[key] || 0) + Number(log.bytes)
     })
 

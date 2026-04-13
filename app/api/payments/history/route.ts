@@ -13,7 +13,7 @@ export async function GET() {
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
     const payments = await prisma.payment.findMany({
-      where: { userId: user.id, status: 'paid' },
+      where: { userId: user.id },
       orderBy: { createdAt: 'desc' },
       take: 20,
     })
@@ -23,6 +23,8 @@ export async function GET() {
       planId: p.planId,
       amount: p.amount,
       months: p.months,
+      status: p.status,
+      promoCode: p.promoCode,
       createdAt: p.createdAt.toISOString(),
     })))
   } catch {

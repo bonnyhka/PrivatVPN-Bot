@@ -1,5 +1,9 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 require('dotenv').config();
 const { Telegraf, Markup } = require('telegraf');
+const { PrismaClient } = require('@prisma/client');
+const { getBotStartText } = require('../lib/telegram-location-summary');
 
 const token = process.env.BOT_TOKEN;
 if (!token) {
@@ -10,12 +14,7 @@ if (!token) {
 // URL of the Mini App
 const WEB_APP_URL = process.env.WEB_APP_URL || 'https://privatevp.space/';
 const bot = new Telegraf(token);
-
-const START_TEXT = '<b>PrivatVPN — Твой проводник в свободный интернет! 🛡️⚡</b>\n\n' +
-  'Мы обеспечиваем максимальную анонимность, обход любых блокировок и молниеносную скорость на всех твоих устройствах.\n\n' +
-  '<b>🌍 Наши локации:</b> 🇩🇪 Германия | 🇳🇱 Нидерланды\n' +
-  '<b>📡 Статус сети:</b> Работает стабильно\n\n' +
-  '👇 <i>Выбирай действие в меню ниже:</i>';
+const prisma = new PrismaClient();
 
 const SUBSCRIBE_TEXT = '<b>👑 Получи бесплатный доступ!</b>\n\n' +
   'Чтобы активировать <b>бесплатный пробный период (1 день)</b> и начать пользоваться всеми преимуществами PrivatVPN, подпишись на наш официальный канал.\n\n' +
@@ -104,8 +103,9 @@ bot.start(async (ctx) => {
 
   // Send the main greeting with banner
   try {
+    const startText = await getBotStartText(prisma);
     const sentMsg = await ctx.replyWithPhoto({ source: './welcome-banner.png' }, {
-      caption: START_TEXT,
+      caption: startText,
       parse_mode: 'HTML',
       ...START_KEYBOARD(startPayload)
     });
@@ -126,8 +126,9 @@ bot.action('verify_subscription', async (ctx) => {
     }
 
     ctx.answerCbQuery('✅ Спасибо за подписку!');
+    const startText = await getBotStartText(prisma);
     
-    await ctx.editMessageCaption(START_TEXT, {
+    await ctx.editMessageCaption(startText, {
       parse_mode: 'HTML',
       ...START_KEYBOARD(undefined)
     });
@@ -149,7 +150,7 @@ bot.action('about_us', async (ctx) => {
       caption: '<b>ℹ️ О сервисе PrivatVPN</b>\n\n' +
         'Мы создали PrivatVPN для тех, кто не готов мириться с ограничениями и ценит свою цифровую свободу.\n\n' +
         '<b>🚀 Почему выбирают нас:</b>\n\n' +
-        '🛡️ <b>Приватность</b> — Используем VLESS Reality и Shadowsocks, которые невозможно отличить от обычного трафика.\n' +
+        '🛡️ <b>Приватность</b> — Используем VLESS Reality и современные протоколы, которые невозможно отличить от обычного трафика.\n' +
         '⚡ <b>Extreme Speed</b> — Прямые каналы до европейских дата-центров. Видео в 4K без задержек.\n' +
         '📱 <b>Удобство</b> — Подключение в один клик через это меню или наше нативное приложение.\n' +
         '🔒 <b>Без логов</b> — Мы не храним историю ваших действий. Ваш интернет — ваши правила.\n\n' +
@@ -167,10 +168,11 @@ bot.action('about_us', async (ctx) => {
 bot.action('back_to_start', async (ctx) => {
   try {
     ctx.answerCbQuery();
+    const startText = await getBotStartText(prisma);
     await ctx.editMessageMedia({
       type: 'photo',
       media: { source: './welcome-banner.png' },
-      caption: START_TEXT,
+      caption: startText,
       parse_mode: 'HTML'
     }, START_KEYBOARD(undefined));
   } catch (error) {
@@ -178,14 +180,16 @@ bot.action('back_to_start', async (ctx) => {
     
     // In case of error, send fresh and delete old
     const prevMsgId = lastMenuMessages.get(ctx.from.id);
-    if (prevMsgId) {
+  if (prevMsgId) {
       ctx.telegram.deleteMessage(ctx.chat.id, prevMsgId).catch(() => {});
     }
 
     try {
-      const sentMsg = await ctx.reply(START_TEXT, { 
-        parse_mode: 'HTML', 
-        ...START_KEYBOARD(undefined) 
+      const startText = await getBotStartText(prisma);
+      const sentMsg = await ctx.replyWithPhoto({ source: './welcome-banner.png' }, {
+        caption: startText,
+        parse_mode: 'HTML',
+        ...START_KEYBOARD(undefined)
       });
       lastMenuMessages.set(ctx.from.id, sentMsg.message_id);
     } catch (e) {
@@ -201,7 +205,13 @@ bot.telegram.setMyCommands([
 bot.launch();
 
 // Enable graceful stop
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
+process.once('SIGINT', async () => {
+  await prisma.$disconnect().catch(() => {});
+  bot.stop('SIGINT');
+});
+process.once('SIGTERM', async () => {
+  await prisma.$disconnect().catch(() => {});
+  bot.stop('SIGTERM');
+});
 
 console.log('Bot is running...');

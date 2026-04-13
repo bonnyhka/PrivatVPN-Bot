@@ -1,6 +1,7 @@
 'use client'
 
-import { Shield, CreditCard, Key, Gift, Headphones, Settings, ShoppingBag } from 'lucide-react'
+import { House, CreditCard, Key, Users, Headphones, Settings, ShoppingBag } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import type { AppView, UserRole } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -10,11 +11,11 @@ interface BottomNavProps {
   userRole: UserRole
 }
 
-const BASE_ITEMS: { view: AppView; label: string; icon: typeof Shield }[] = [
-  { view: 'home', label: 'VPN', icon: Shield },
+const BASE_ITEMS: { view: AppView; label: string; icon: LucideIcon }[] = [
+  { view: 'home', label: 'Главная', icon: House },
   { view: 'plans', label: 'Тарифы', icon: CreditCard },
   { view: 'my-vpn', label: 'Мой VPN', icon: Key },
-  { view: 'referral', label: 'Друзья', icon: Gift },
+  { view: 'referral', label: 'Рефералы', icon: Users },
 ]
 
 export function BottomNav({ currentView, onNavigate, userRole }: BottomNavProps) {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/payments'
 
 export async function GET() {
   try {
@@ -13,7 +14,7 @@ export async function GET() {
       prisma.subscription.count({ where: { status: 'active', expiresAt: { gt: new Date() } } }),
       prisma.ticket.count({ where: { status: 'open' } }),
       prisma.payment.aggregate({
-        where: { status: { in: ['paid', 'completed'] }, createdAt: { gte: thirtyDaysAgo } },
+        where: { status: { in: SUCCESSFUL_PAYMENT_STATUSES as any }, createdAt: { gte: thirtyDaysAgo } },
         _sum: { amount: true }
       }),
       (prisma as any).trafficLog.aggregate({

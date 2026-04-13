@@ -69,7 +69,7 @@ function mapLocationDecrypt(row: Record<string, unknown>): Record<string, unknow
 function isLocationRow(value: unknown): value is Record<string, unknown> {
   if (!value || typeof value !== 'object') return false
   const o = value as Record<string, unknown>
-  return typeof o.id === 'string' && typeof o.host === 'string' && typeof o.country === 'string'
+  return SECRET_LOCATION_FIELDS.some((field) => typeof o[field] === 'string')
 }
 
 const WRITE_ENCRYPT_OPS = new Set(['create', 'createMany', 'update', 'updateMany', 'upsert'])

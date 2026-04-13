@@ -8,39 +8,89 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     
     const { id } = await params
 
-    const customStream = new ReadableStream({
-      start(controller) {
-        // Run the sync script targeting only this location
-        // We pass TARGET_NODE_ID environment variable
-        const child = spawn('npx', ['tsx', 'scripts/sync-vpn-singbox-minimal.ts'], {
+    const encoder = new TextEncoder()
+    const write = (controller: ReadableStreamDefaultController<Uint8Array>, chunk: string) => {
+      controller.enqueue(encoder.encode(chunk))
+    }
+
+    const runStep = (
+      controller: ReadableStreamDefaultController<Uint8Array>,
+      label: string,
+      command: string,
+      args: string[]
+    ) =>
+      new Promise<boolean>((resolve) => {
+        write(controller, `\n=== ${label} ===\n`)
+
+        const child = spawn(command, args, {
+          cwd: process.cwd(),
           env: {
             ...process.env,
-            TARGET_NODE_ID: id
-          }
+            TARGET_NODE_ID: id,
+          },
         })
 
-        child.stdout.on('data', (data) => {
-          controller.enqueue(data)
-        })
-
-        child.stderr.on('data', (data) => {
-          controller.enqueue(data)
-        })
+        child.stdout.on('data', (data) => controller.enqueue(data))
+        child.stderr.on('data', (data) => controller.enqueue(data))
 
         child.on('close', (code) => {
-          if (code !== 0) {
-            controller.enqueue(new TextEncoder().encode(`\nProcess exited with code ${code}\n`))
-          } else {
-            controller.enqueue(new TextEncoder().encode('\nDeployment completed successfully.\n'))
+          if (code === 0) {
+            write(controller, `\n[OK] ${label}\n`)
+            resolve(true)
+            return
           }
-          controller.close()
+
+          write(controller, `\n[FAIL] ${label} (exit ${code ?? 'unknown'})\n`)
+          resolve(false)
         })
 
         child.on('error', (err) => {
-          controller.enqueue(new TextEncoder().encode(`\nFailed to start process: ${err.message}\n`))
+          write(controller, `\n[FAIL] ${label}: ${err.message}\n`)
+          resolve(false)
+        })
+      })
+
+    const customStream = new ReadableStream({
+      start(controller) {
+        ;(async () => {
+          const provisioned = await runStep(
+            controller,
+            'Установка и синхронизация узла',
+            'npx',
+            ['tsx', 'scripts/sync-vpn-singbox-minimal.ts']
+          )
+
+          if (!provisioned) {
+            write(controller, '\nProvisioning aborted.\n')
+            controller.close()
+            return
+          }
+
+          const diagnosticsUpdated = await runStep(
+            controller,
+            'Первичная диагностика новой локации',
+            'node',
+            ['scripts/update-location-diagnostics.js', '--once']
+          )
+
+          if (!diagnosticsUpdated) {
+            write(
+              controller,
+              '\nDeployment completed, but diagnostics refresh failed. The node may appear fully in status after the background monitor cycle.\n'
+            )
+          } else {
+            write(
+              controller,
+              '\nDeployment completed successfully. Live speed monitor will attach the new node automatically within about a minute.\n'
+            )
+          }
+
+          controller.close()
+        })().catch((err) => {
+          write(controller, `\nFailed to start provisioning flow: ${err.message}\n`)
           controller.close()
         })
-      }
+      },
     })
 
     return new Response(customStream, {

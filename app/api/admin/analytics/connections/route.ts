@@ -14,7 +14,6 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get historical connection data for the last 24 hours
     const past24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000)
     
     const logs = await prisma.connectionLog.findMany({
@@ -33,9 +32,6 @@ export async function GET() {
       where: { isActive: true },
       select: { id: true, name: true }
     })
-
-    // Group logs by location and time (e.g., hourly averages or just points)
-    // For a 24h chart with 10min resolution, we have ~144 points. That's fine for Recharts.
     const result = locations.map(loc => {
       const locLogs = logs.filter(l => l.locationId === loc.id)
       return {

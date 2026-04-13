@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { formatUserForClient } from '@/lib/format-user'
+import { reconcilePaymentStatus } from '@/lib/payment-reconcile'
+import { PENDING_PAYMENT_TTL_MS, isSuccessfulPaymentStatus } from '@/lib/payments'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +14,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { id: session.userId },
       include: {
         subscription: true,
@@ -27,6 +29,62 @@ export async function GET() {
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    try {
+      const since = new Date(Date.now() - PENDING_PAYMENT_TTL_MS * 2)
+      const pendingPayments = await prisma.payment.findMany({
+        where: {
+          userId: user.id,
+          status: 'pending',
+          createdAt: { gte: since },
+          amount: { gt: 0 },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 2,
+        include: {
+          user: {
+            select: {
+              subscription: {
+                select: {
+                  id: true,
+                  planId: true,
+                  status: true,
+                  isManual: true,
+                  createdAt: true,
+                  updatedAt: true,
+                },
+              },
+            },
+          },
+        },
+      })
+
+      let shouldRefreshUser = false
+      for (const payment of pendingPayments) {
+        const wasSuccess = isSuccessfulPaymentStatus(payment.status)
+        const result = await reconcilePaymentStatus(payment as any)
+        if (!wasSuccess && result.status === 'success') {
+          shouldRefreshUser = true
+        }
+      }
+
+      if (shouldRefreshUser) {
+        user = await prisma.user.findUnique({
+          where: { id: session.userId },
+          include: {
+            subscription: true,
+            referralActions: {
+              include: { referred: { select: { username: true, avatar: true, firstName: true } } },
+              orderBy: { createdAt: 'desc' },
+              take: 10
+            },
+            _count: { select: { referrals: true } }
+          }
+        }) as any
+      }
+    } catch (error) {
+      console.error('Payment reconciliation error:', error)
     }
 
     const firstLocation = await prisma.location.findFirst({ where: { isActive: true } })

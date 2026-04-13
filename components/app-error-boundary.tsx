@@ -12,6 +12,17 @@ interface AppErrorBoundaryState {
   hasError: boolean
 }
 
+function isRecoverableChunkError(error?: Error | null) {
+  const text = `${error?.message || ''} ${error?.stack || ''}`.toLowerCase()
+  return (
+    text.includes('chunkloaderror') ||
+    text.includes('failed to load chunk') ||
+    text.includes('asset load error') ||
+    text.includes('/_next/static/') ||
+    text.includes('failed to fetch dynamically imported module')
+  )
+}
+
 export class AppErrorBoundary extends React.Component<AppErrorBoundaryProps, AppErrorBoundaryState> {
   constructor(props: AppErrorBoundaryProps) {
     super(props)
@@ -49,6 +60,19 @@ export class AppErrorBoundary extends React.Component<AppErrorBoundaryProps, App
         }).catch(() => {})
       }
     } catch {}
+
+    if (typeof window !== 'undefined' && isRecoverableChunkError(error)) {
+      try {
+        const reloadKey = 'privatvpn_boundary_reload_v1'
+        if (!sessionStorage.getItem(reloadKey)) {
+          sessionStorage.setItem(reloadKey, String(Date.now()))
+          const nextUrl = new URL(window.location.href)
+          nextUrl.searchParams.set('__miniapp_chunk_reload', String(Date.now()))
+          window.location.replace(nextUrl.toString())
+          return
+        }
+      } catch {}
+    }
   }
 
   handleReset = () => {
@@ -56,6 +80,18 @@ export class AppErrorBoundary extends React.Component<AppErrorBoundaryProps, App
     try {
       localStorage.removeItem('privatvpn_current_view')
       localStorage.removeItem('privatvpn_current_view_v2')
+    } catch {}
+    try {
+      sessionStorage.removeItem('privatvpn_asset_reload_count_v2')
+      sessionStorage.removeItem('privatvpn_boundary_reload_v1')
+    } catch {}
+    try {
+      if (typeof window !== 'undefined') {
+        const nextUrl = new URL(window.location.href)
+        nextUrl.searchParams.set('__miniapp_reset', String(Date.now()))
+        window.location.replace(nextUrl.toString())
+        return
+      }
     } catch {}
     this.props.onReset()
   }

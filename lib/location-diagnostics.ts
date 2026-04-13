@@ -5,6 +5,14 @@ export interface LocationDiagnosticsSnapshot {
   checkedAt?: string
   targetHost?: string
   targetLabel?: string
+  pingTargetHost?: string
+  pingTargetLabel?: string
+  bandwidthTargetHost?: string
+  bandwidthTargetLabel?: string
+  system?: {
+    uptimeSec?: number | null
+    bootedAt?: string | null
+  }
   networkHistory?: Array<{
     timestamp: string
     pingTargetAvgMs?: number | null
@@ -22,6 +30,9 @@ export interface LocationDiagnosticsSnapshot {
     totalCounterBytes?: number | null
     deltaBytes?: number | null
     todayBytes?: number | null
+    excludedProbeBytes?: number | null
+    excludedProbeBytesToday?: number | null
+    normalizationVersion?: number | null
     day?: string | null
     history?: Array<{
       timestamp: string

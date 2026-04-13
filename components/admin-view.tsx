@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { AnimatedContainer, AnimatedItem } from '@/components/ui/animated-view'
+import { RevenueInsightsDialog } from '@/components/revenue-insights-dialog'
 
 interface AdminViewProps {
   onNavigate: (view: AppView) => void
@@ -32,6 +33,7 @@ export function AdminView({ onNavigate }: AdminViewProps) {
   const [analytics, setAnalytics] = useState<any>(null)
   const [settings, setSettings] = useState<{ globalNotification?: string }>({ globalNotification: '' })
   const [savingSettings, setSavingSettings] = useState(false)
+  const [isRevenueDialogOpen, setIsRevenueDialogOpen] = useState(false)
 
   function loadData() {
     fetch('/api/admin/stats').then(r => r.json()).then(d => {
@@ -98,7 +100,7 @@ export function AdminView({ onNavigate }: AdminViewProps) {
   }
 
   const statCards = [
-    { label: 'Оборот (30д)', value: stats.monthlyRevenue ? stats.monthlyRevenue.toLocaleString() + ' ₽' : '0 ₽', icon: DollarSign },
+    { label: 'Оборот (30д)', value: stats.monthlyRevenue ? stats.monthlyRevenue.toLocaleString() + ' ₽' : '0 ₽', icon: DollarSign, interactive: true },
     { label: 'Всего трафика', value: formatTraffic(analytics?.totalTraffic || 0), icon: Globe, subValue: formatTrafficCheckedAt(analytics?.trafficCheckedAt) },
     { label: 'Юзеры', value: stats.totalUsers || 0, icon: Users },
     { label: 'Тикеты', value: stats.openTickets || 0, icon: Headphones },
@@ -120,7 +122,7 @@ export function AdminView({ onNavigate }: AdminViewProps) {
   // Removed old chart section
 
   return (
-    <AnimatedContainer className="min-h-screen px-4 pb-24 pt-6">
+    <AnimatedContainer className="min-h-screen px-3 pb-24 pt-4 sm:px-4 sm:pt-6">
       {/* Header */}
       <AnimatedItem className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -141,35 +143,44 @@ export function AdminView({ onNavigate }: AdminViewProps) {
       </AnimatedItem>
 
       {/* Stats grid */}
-      <AnimatedItem className="mt-6 grid grid-cols-2 gap-3">
+      <AnimatedItem className="mt-4 grid grid-cols-2 gap-2.5 sm:mt-6 sm:gap-3">
         {statCards.map((stat) => {
           const Icon = stat.icon
+          const clickable = Boolean((stat as any).interactive)
           return (
-            <div key={stat.label} className="rounded-xl border border-border bg-card p-4">
+            <button
+              key={stat.label}
+              type="button"
+              onClick={() => clickable && setIsRevenueDialogOpen(true)}
+              className={cn(
+                'rounded-[1.15rem] border border-border bg-card p-3.5 text-left sm:rounded-xl sm:p-4',
+                clickable && 'transition-colors hover:border-primary/30 hover:bg-card/90'
+              )}
+            >
               <div className="flex items-center justify-between">
                 <Icon className="h-4 w-4 text-muted-foreground" />
               </div>
-              <p className="mt-2 text-2xl font-extrabold text-foreground">{stat.value}</p>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="mt-2 text-[1.8rem] font-extrabold text-foreground sm:text-2xl">{stat.value}</p>
+              <p className="text-[10px] leading-snug text-muted-foreground">
                 {stat.label}
                 {stat.subValue && <span className="ml-1 text-primary/70">• {stat.subValue}</span>}
               </p>
-            </div>
+            </button>
           )
         })}
       </AnimatedItem>
 
       {/* Settings */}
-      <AnimatedItem className="mt-6 overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card p-1">
-        <div className="rounded-xl border border-white/5 bg-card/50 p-4 backdrop-blur-xl">
-          <div className="mb-4 flex items-center justify-between">
+      <AnimatedItem className="mt-4 overflow-hidden rounded-[1.35rem] border border-primary/15 bg-gradient-to-br from-primary/8 via-card to-card p-1 sm:mt-6 sm:rounded-2xl">
+        <div className="rounded-[1.05rem] border border-white/5 bg-card/55 p-3.5 backdrop-blur-xl sm:rounded-xl sm:p-4">
+          <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/20 ring-1 ring-primary/30">
-                <Sparkles className="h-5 w-5 text-primary" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-[1rem] bg-primary/20 ring-1 ring-primary/30 sm:h-10 sm:w-10 sm:rounded-xl">
+                <Sparkles className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
               </div>
               <div>
                 <h2 className="text-sm font-bold text-foreground">Push-Уведомление (hApp)</h2>
-                <p className="mt-0.5 text-[10px] text-muted-foreground">Эксклюзивный нативный popup-alert для пользователей hApp</p>
+                <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">Нативное popup-уведомление для пользователей hApp</p>
               </div>
             </div>
             <div className={cn(
@@ -184,18 +195,18 @@ export function AdminView({ onNavigate }: AdminViewProps) {
             </div>
           </div>
           
-          <div className="flex gap-2 relative">
+          <div className="relative flex flex-col gap-2 sm:flex-row">
             <input
               type="text"
               placeholder="Введите текст системного уведомления для hApp..."
               value={settings.globalNotification || ''}
               onChange={(e) => setSettings({ ...settings, globalNotification: e.target.value })}
-              className="flex-1 rounded-xl border border-primary/20 bg-background/50 p-3 pl-4 text-xs font-medium text-foreground placeholder-muted-foreground/50 transition-all focus:border-primary/50 focus:bg-background focus:outline-none focus:ring-4 focus:ring-primary/10"
+              className="flex-1 rounded-[1rem] border border-primary/20 bg-background/50 p-3 pl-4 text-xs font-medium text-foreground placeholder-muted-foreground/50 transition-all focus:border-primary/50 focus:bg-background focus:outline-none focus:ring-4 focus:ring-primary/10 sm:rounded-xl"
             />
             <button
               disabled={savingSettings}
               onClick={handleSaveSettings}
-              className="group relative flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] hover:shadow-primary/40 focus:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
+              className="group relative flex h-11 items-center justify-center gap-2 rounded-[1rem] bg-primary px-5 py-3 text-xs font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] hover:shadow-primary/40 focus:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 sm:h-auto sm:rounded-xl"
             >
               {savingSettings ? (
                 <RefreshCw className="h-4 w-4 animate-spin" />
@@ -207,11 +218,13 @@ export function AdminView({ onNavigate }: AdminViewProps) {
               )}
             </button>
           </div>
-          <p className="mt-3 flex items-center gap-1.5 text-[9px] text-muted-foreground/70 text-center justify-center">
+          <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-[9px] leading-snug text-muted-foreground/70 sm:mt-3">
             Оставьте поле пустым и нажмите «Применить», чтобы отключить рассылку уведомления.
           </p>
         </div>
       </AnimatedItem>
+
+      <RevenueInsightsDialog open={isRevenueDialogOpen} onOpenChange={setIsRevenueDialogOpen} />
 
       {/* Servers section */}
       <AnimatedItem className="mt-6">

@@ -4,6 +4,8 @@ import prisma from '@/lib/db'
 import { getClientIp } from '@/lib/request-security'
 import { rateLimit } from '@/lib/rate-limit'
 import { isDiagnosticsSshAuthError, readLocationDiagnosticsCache } from '@/lib/location-diagnostics'
+import { readLocationTrafficAccounting } from '@/lib/location-traffic-accounting'
+import { formatDurationSeconds } from '@/lib/uptime'
 
 function getHealth(load: number, diagnostics: any) {
   if (!diagnostics) {
@@ -34,8 +36,8 @@ function getHealth(load: number, diagnostics: any) {
   if (loss >= 1) { score -= 25; reasons.push(`Потери ${loss.toFixed(1)}%`) }
   if (ping >= 150) { score -= 20; reasons.push(`Высокий ping ${Math.round(ping)} мс`) }
   if (sender > 0 && sender < 800) { score -= 20; reasons.push(`Низкий iperf ${Math.round(sender)} Мбит/с`) }
-  if (load >= 85) { score -= 20; reasons.push(`Высокая нагрузка ${Math.round(load)}%`) }
-  if (load >= 70) { score -= 10; reasons.push(`Нагрузка ${Math.round(load)}%`) }
+  if (load >= 95) { score -= 2; reasons.push(`Высокая нагрузка ${Math.round(load)}%`) }
+  else if (load >= 80) { score -= 1; reasons.push(`Нагрузка ${Math.round(load)}%`) }
 
   score = Math.max(0, Math.min(100, score))
 
@@ -66,7 +68,7 @@ export async function GET(req: Request) {
       )
     }
 
-    const [locations, diagnosticsCache] = await Promise.all([
+    const [locations, diagnosticsCache, locationTrafficAccounting] = await Promise.all([
       prisma.location.findMany({
         where: { isActive: true },
         select: {
@@ -83,12 +85,15 @@ export async function GET(req: Request) {
         orderBy: [{ country: 'asc' }, { name: 'asc' }],
       }),
       Promise.resolve(readLocationDiagnosticsCache()),
+      Promise.resolve(readLocationTrafficAccounting()),
     ])
 
     const diagnosticsByLocation = diagnosticsCache?.locations || {}
+    const trafficByLocation = locationTrafficAccounting?.locations || {}
 
     const payload = locations.map((loc) => {
       const diagnostics = diagnosticsByLocation[loc.id]
+      const accountedTraffic = trafficByLocation[loc.id] || null
       const health = getHealth(loc.load, diagnostics)
       const onlinePorts = Number(diagnostics?.onlinePorts || 0)
       const totalPorts = Number(diagnostics?.totalPorts || 0)
@@ -102,12 +107,23 @@ export async function GET(req: Request) {
         activePing = Math.round(diagnostics.mtr.avgMs)
       }
 
+      const uptimeSec = Number(diagnostics?.system?.uptimeSec || 0)
+
       return {
         ...loc,
         ping: activePing,
         checks: diagnostics?.checks || [],
-        diagnostics: diagnostics || null,
+        diagnostics: diagnostics
+          ? {
+              ...diagnostics,
+              accountedTraffic,
+            }
+          : accountedTraffic
+            ? { accountedTraffic }
+            : null,
         checkedAt,
+        uptimeSec: uptimeSec > 0 ? uptimeSec : null,
+        uptimeLabel: uptimeSec > 0 ? formatDurationSeconds(uptimeSec) : 'нет данных',
         freshnessLabel: getFreshnessLabel(checkedAt || undefined),
         capacityLabel,
         ...health,
@@ -120,4 +136,3 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
-

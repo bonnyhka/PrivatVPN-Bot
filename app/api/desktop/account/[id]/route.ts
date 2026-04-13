@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getDynamicPlans } from '@/lib/plans'
+import { getDynamicPlans, getDisplayTrafficLimit } from '@/lib/plans'
 import { buildSubscriptionLookupWhere } from '@/lib/security'
 
 export const dynamic = 'force-dynamic'
@@ -38,7 +38,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         planName: plan?.name || subscription.planId,
         expiresAt: subscription.expiresAt.toISOString(),
         trafficUsed: Number(subscription.trafficUsed || 0),
-        trafficTotal: plan?.trafficLimit === Number.MAX_SAFE_INTEGER ? null : Number(plan?.trafficLimit || 0),
+        trafficTotal: getDisplayTrafficLimit(plan),
         displayName: subscription.user?.firstName
           ? `${subscription.user.firstName} ${subscription.user.lastName || ''}`.trim()
           : subscription.user?.username || 'PrivatVPN User',
