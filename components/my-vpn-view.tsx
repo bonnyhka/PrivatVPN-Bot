@@ -85,7 +85,27 @@ export function MyVpnView({ user, onNavigate }: MyVpnViewProps) {
   return (
     <AnimatedContainer className="app-screen-shell min-h-screen px-4 pb-24 pt-6">
       <div className="mx-auto w-full max-w-md space-y-4">
-
+        <AnimatedItem>
+          <div className="grain-surface relative overflow-hidden rounded-[26px] border border-border/80 bg-card/95 p-5 shadow-[0_24px_60px_-45px_rgba(0,0,0,0.85)]">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(120,130,255,0.09),transparent_48%)]" />
+            <img
+              src="/images/referral-hero.gif"
+              alt=""
+              className="pointer-events-none absolute -right-10 top-0 h-full w-[56%] rotate-[8deg] object-contain opacity-60"
+            />
+            <div className="relative">
+              <div className="flex items-start justify-between gap-4">
+                <div className="max-w-[66%]">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-muted-foreground">
+                    Подписка PrivatVPN
+                  </p>
+                  <h1 className="mt-2 text-lg font-bold text-foreground">Мой VPN</h1>
+                  <p className="mt-1 text-xs text-muted-foreground">Управляйте подключением и ключами</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </AnimatedItem>
 
         <AnimatedItem>
           <MyVpnManageCard
