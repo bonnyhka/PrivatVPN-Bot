@@ -40,24 +40,24 @@ function StatCard({
 }) {
   const iconBg =
     tone === 'green'
-      ? 'bg-emerald-500/15 text-emerald-400 ring-emerald-500/20'
+      ? 'bg-emerald-500/15 text-emerald-400'
       : tone === 'blue'
-        ? 'bg-primary/15 text-primary ring-primary/20'
-        : 'bg-white/[0.07] text-foreground/70 ring-white/10'
+        ? 'bg-primary/15 text-primary'
+        : 'bg-white/[0.07] text-foreground/70'
 
   const valueColor =
     tone === 'green' ? 'text-emerald-300' : tone === 'blue' ? 'text-primary' : 'text-foreground'
 
   return (
-    <div className="grain-surface relative overflow-hidden rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">{label}</p>
-        <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ring-1', iconBg)}>
-          <Icon className="h-3.5 w-3.5" />
-        </div>
+    <div className="flex items-center gap-3">
+      <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', iconBg)}>
+        <Icon className="h-4 w-4" />
       </div>
-      <p className={cn('mt-3 text-2xl font-black tracking-tight', valueColor)}>{value}</p>
-      <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p>
+      <div className="min-w-0">
+        <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
+        <p className={cn('text-lg font-bold tracking-tight', valueColor)}>{value}</p>
+        <p className="text-[10px] text-muted-foreground/70">{hint}</p>
+      </div>
     </div>
   )
 }
@@ -119,98 +119,93 @@ export function RevenueInsightsDialog({
         <div className="grain-surface-strong max-h-[90vh] overflow-y-auto rounded-[28px] border border-white/10 bg-[#0a0d16] shadow-[0_40px_120px_rgba(0,0,0,0.7)] backdrop-blur-2xl">
 
           {/* Header */}
-          <div className="relative border-b border-white/8 px-5 pb-6 pt-6 sm:px-6 sm:pt-7">
-            {/* Glow accent */}
-            <div className="pointer-events-none absolute left-0 top-0 h-40 w-64 rounded-full bg-primary/8 blur-3xl" />
-
-            <div className="grain-surface relative rounded-[1.75rem] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.025),rgba(255,255,255,0.01))] px-4 py-5 sm:px-5">
-              <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-                <TrendingUp className="h-3 w-3" />
-                Финансы
-              </div>
-              <h2 className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">Финансовая сводка</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Выручка и история оплат за выбранный период</p>
-
-              {/* Date range + Button */}
-              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-                <div className="flex flex-1 items-center gap-2">
-                  <div className="flex-1 space-y-1">
-                    <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">С</span>
-                    <input
-                      type="month"
-                      value={draftFromMonth}
-                      onChange={(e) => setDraftFromMonth(e.target.value)}
-                      className="w-full rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary/50 focus:bg-white/[0.08]"
-                    />
-                  </div>
-                  <div className="mt-5 text-muted-foreground">→</div>
-                  <div className="flex-1 space-y-1">
-                    <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">По</span>
-                    <input
-                      type="month"
-                      value={draftToMonth}
-                      onChange={(e) => setDraftToMonth(e.target.value)}
-                      className="w-full rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary/50 focus:bg-white/[0.08]"
-                    />
-                  </div>
+          <div className="relative px-5 pb-4 pt-5 sm:px-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15">
+                  <TrendingUp className="h-5 w-5 text-primary" />
                 </div>
-                <button
-                  onClick={() => {
-                    setFromMonth(draftFromMonth)
-                    setToMonth(draftToMonth)
-                    void load(draftFromMonth, draftToMonth)
-                  }}
-                  disabled={loading}
-                  className={cn(
-                    'flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground transition hover:brightness-110 active:scale-[0.98] sm:min-w-[180px]',
-                    loading && 'opacity-60'
-                  )}
-                >
-                  <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
-                  Обновить
-                </button>
+                <div>
+                  <h2 className="text-lg font-bold text-foreground">Финансы</h2>
+                  <p className="text-xs text-muted-foreground">Выручка и история оплат</p>
+                </div>
               </div>
+            </div>
+
+            {/* Date range inline */}
+            <div className="mt-4 flex items-center gap-2">
+              <input
+                type="month"
+                value={draftFromMonth}
+                onChange={(e) => setDraftFromMonth(e.target.value)}
+                className="h-9 flex-1 rounded-lg border border-white/10 bg-white/[0.05] px-2.5 text-xs text-foreground outline-none transition focus:border-primary/40"
+              />
+              <span className="text-xs text-muted-foreground">—</span>
+              <input
+                type="month"
+                value={draftToMonth}
+                onChange={(e) => setDraftToMonth(e.target.value)}
+                className="h-9 flex-1 rounded-lg border border-white/10 bg-white/[0.05] px-2.5 text-xs text-foreground outline-none transition focus:border-primary/40"
+              />
+              <button
+                onClick={() => {
+                  setFromMonth(draftFromMonth)
+                  setToMonth(draftToMonth)
+                  void load(draftFromMonth, draftToMonth)
+                }}
+                disabled={loading}
+                className={cn(
+                  'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition hover:brightness-110 active:scale-95',
+                  loading && 'opacity-60'
+                )}
+              >
+                <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
+              </button>
             </div>
           </div>
 
           {/* Body */}
-          <div className="space-y-4 px-5 pb-6 pt-5 sm:px-6 sm:pb-7">
+          <div className="space-y-3 px-5 pb-5 sm:px-6">
 
             {/* Stats grid */}
-            <div className="grid grid-cols-2 gap-3">
-              <StatCard
-                label="Оборот"
-                value={formatRub(totals.totalRevenue)}
-                hint={`${totals.successfulCount || 0} платежей`}
-                icon={BarChart3}
-                tone="blue"
-              />
-              <StatCard
-                label="Крипто"
-                value={formatRub(totals.cryptoRevenue)}
-                hint={cryptoHint}
-                icon={Coins}
-                tone="green"
-              />
-              <StatCard
-                label="Средний чек"
-                value={formatRub(totals.averageCheck)}
-                hint="за период"
-                icon={Wallet}
-              />
-              <StatCard
-                label="Провайдеры"
-                value={String(providerRows.length || 0)}
-                hint="источников оплаты"
-                icon={CreditCard}
-              />
+            <div className="grain-surface rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+              <div className="grid grid-cols-2 gap-4">
+                <StatCard
+                  label="Оборот"
+                  value={formatRub(totals.totalRevenue)}
+                  hint={`${totals.successfulCount || 0} платежей`}
+                  icon={BarChart3}
+                  tone="blue"
+                />
+                <StatCard
+                  label="Крипто"
+                  value={formatRub(totals.cryptoRevenue)}
+                  hint={cryptoHint}
+                  icon={Coins}
+                  tone="green"
+                />
+              </div>
+              <div className="my-3 border-t border-white/6" />
+              <div className="grid grid-cols-2 gap-4">
+                <StatCard
+                  label="Средний чек"
+                  value={formatRub(totals.averageCheck)}
+                  hint="за период"
+                  icon={Wallet}
+                />
+                <StatCard
+                  label="Провайдеры"
+                  value={String(providerRows.length || 0)}
+                  hint="источников"
+                  icon={CreditCard}
+                />
+              </div>
             </div>
 
             {/* Chart */}
             <div className="grain-surface rounded-2xl border border-white/8 bg-white/[0.02] p-4">
-              <p className="text-sm font-bold text-foreground">История по месяцам</p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">Оборот и крипто-платежи за выбранный диапазон</p>
-              <div className="mt-4 h-44 sm:h-52">
+              <p className="text-xs font-semibold text-foreground">История по месяцам</p>
+              <div className="mt-3 h-36 sm:h-44">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={monthlyData}>
                     <defs>
@@ -245,69 +240,53 @@ export function RevenueInsightsDialog({
               </div>
             </div>
 
-            {/* Two cols: providers + recent payments */}
-            <div className="grid gap-4 lg:grid-cols-2">
-
+            {/* Providers + Recent payments */}
+            <div className="grid gap-3 sm:grid-cols-2">
               {/* Providers */}
-              <div className="grain-surface rounded-2xl border border-white/8 bg-white/[0.02] p-4">
-                <p className="text-sm font-bold text-foreground">Разбивка по платёжкам</p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">Выручка по источникам за период</p>
-                <div className="mt-3 space-y-2">
+              <div className="grain-surface rounded-2xl border border-white/8 bg-white/[0.02] p-3">
+                <p className="text-xs font-semibold text-foreground">Провайдеры</p>
+                <div className="mt-2 space-y-1.5">
                   {providerRows.length > 0 ? providerRows.map((provider: any) => (
                     <div
                       key={provider.providerId}
-                      className="grain-surface flex items-center justify-between gap-3 rounded-xl border border-white/8 bg-white/[0.03] px-3.5 py-3"
+                      className="flex items-center justify-between gap-2 rounded-lg bg-white/[0.04] px-2.5 py-2"
                     >
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-foreground">{provider.label}</p>
-                        <p className="mt-0.5 text-[11px] text-muted-foreground">
-                          {provider.count} платежей{provider.isCrypto ? ' · крипто' : ''}
+                        <p className="text-xs font-medium text-foreground">{provider.label}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {provider.count} платежей
                         </p>
                       </div>
-                      <p className="shrink-0 text-sm font-extrabold text-foreground">{formatRub(provider.revenue)}</p>
+                      <p className="shrink-0 text-xs font-bold text-foreground">{formatRub(provider.revenue)}</p>
                     </div>
                   )) : (
-                    <div className="grain-surface rounded-xl border border-white/8 bg-white/[0.03] p-4 text-sm text-muted-foreground">
-                      Нет подтверждённых оплат за период.
-                    </div>
+                    <p className="py-2 text-xs text-muted-foreground">Нет данных</p>
                   )}
                 </div>
               </div>
 
               {/* Recent payments */}
-              <div className="grain-surface rounded-2xl border border-white/8 bg-white/[0.02] p-4">
-                <p className="text-sm font-bold text-foreground">Последние платежи</p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">Свежие поступления</p>
-                <div className="mt-3 space-y-2">
-                  {recentPayments.length > 0 ? recentPayments.map((payment: any) => (
+              <div className="grain-surface rounded-2xl border border-white/8 bg-white/[0.02] p-3">
+                <p className="text-xs font-semibold text-foreground">Последние платежи</p>
+                <div className="mt-2 space-y-1.5">
+                  {recentPayments.length > 0 ? recentPayments.slice(0, 4).map((payment: any) => (
                     <div
                       key={payment.id}
-                      className="grain-surface flex items-center justify-between gap-3 rounded-xl border border-white/8 bg-white/[0.03] px-3.5 py-3"
+                      className="flex items-center justify-between gap-2 rounded-lg bg-white/[0.04] px-2.5 py-2"
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-foreground">{payment.user?.displayName || 'user'}</p>
-                        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-                          <span>{payment.planId} · {payment.months}м</span>
-                          <span className="rounded-full bg-white/[0.07] px-2 py-0.5 text-[10px] text-foreground/70">
-                            {payment.providerLabel}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <p className="text-sm font-extrabold text-foreground">{formatRub(payment.amount)}</p>
-                        <p className="mt-0.5 text-[11px] text-muted-foreground">
-                          {String(payment.createdAt || '').slice(0, 10)}
+                        <p className="truncate text-xs font-medium text-foreground">{payment.user?.displayName || 'user'}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {payment.planId} · {payment.providerLabel}
                         </p>
                       </div>
+                      <p className="shrink-0 text-xs font-bold text-foreground">{formatRub(payment.amount)}</p>
                     </div>
                   )) : (
-                    <div className="grain-surface rounded-xl border border-white/8 bg-white/[0.03] p-4 text-sm text-muted-foreground">
-                      Пока пусто.
-                    </div>
+                    <p className="py-2 text-xs text-muted-foreground">Пока пусто</p>
                   )}
                 </div>
               </div>
-
             </div>
           </div>
         </div>

@@ -1,14 +1,12 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   AlertTriangle,
-  CalendarDays,
   Headset,
   Loader2,
   ReceiptText,
-  ShieldCheck,
 } from 'lucide-react'
 import type { AppView, User } from '@/lib/types'
 import { PLANS } from '@/lib/store'
@@ -22,30 +20,7 @@ interface MyVpnViewProps {
   onNavigate: (view: AppView) => void
 }
 
-function getRemainingDays(expiresAt?: string | null) {
-  if (!expiresAt) return 0
-  const timestamp = new Date(expiresAt).getTime()
-  if (!Number.isFinite(timestamp)) return 0
-  return Math.max(0, Math.ceil((timestamp - Date.now()) / (1000 * 60 * 60 * 24)))
-}
 
-function getRemainingLabel(days: number) {
-  if (days >= 730) return `${Math.floor(days / 365)} лет`
-  if (days >= 60) return `${Math.floor(days / 30)} мес`
-  return `${days} дн`
-}
-
-function formatTraffic(bytes: number) {
-  if (!Number.isFinite(bytes) || bytes <= 0) return '0 Б'
-  const units = ['Б', 'КБ', 'МБ', 'ГБ', 'ТБ']
-  let value = bytes
-  let unit = 0
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024
-    unit += 1
-  }
-  return `${value.toFixed(value >= 100 || unit === 0 ? 0 : 1)} ${units[unit]}`
-}
 
 export function MyVpnView({ user, onNavigate }: MyVpnViewProps) {
   const { refreshUser } = useTelegramUser()
@@ -55,7 +30,6 @@ export function MyVpnView({ user, onNavigate }: MyVpnViewProps) {
 
   const sub = user.subscription
   const plan = PLANS.find((item) => item.id === sub?.planId)
-  const remainingDays = useMemo(() => getRemainingDays(sub?.expiresAt), [sub?.expiresAt])
 
   const handleCopy = () => {
     if (sub?.subscriptionUrl) {
@@ -112,56 +86,21 @@ export function MyVpnView({ user, onNavigate }: MyVpnViewProps) {
     <AnimatedContainer className="app-screen-shell min-h-screen px-4 pb-24 pt-6">
       <div className="mx-auto w-full max-w-md space-y-4">
         <AnimatedItem>
-          <div className="grain-surface relative overflow-hidden rounded-[28px] border border-border/80 bg-card/95 p-5 shadow-[0_24px_70px_-50px_rgba(0,0,0,0.9)]">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(80,120,255,0.18),transparent_48%)]" />
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(120,130,255,0.11),transparent_50%)]" />
+          <div className="grain-surface relative overflow-hidden rounded-[26px] border border-border/80 bg-card/95 p-5 shadow-[0_24px_60px_-45px_rgba(0,0,0,0.85)]">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(120,130,255,0.09),transparent_48%)]" />
             <img
-              src="/images/referral-hero.gif"
+              src="/images/vpn-hero.gif"
               alt=""
-              className="pointer-events-none absolute -right-10 -top-10 h-[160%] w-[60%] rotate-[10deg] object-contain opacity-68"
+              className="pointer-events-none absolute -right-4 top-1/2 h-[75%] w-[36%] -translate-y-1/2 object-contain opacity-85"
             />
-
             <div className="relative">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+              <div className="flex items-start justify-between gap-4">
+                <div className="max-w-[66%]">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-muted-foreground">
                     Подписка PrivatVPN
                   </p>
-                  <h1 className="mt-2 text-[1.7rem] font-black leading-[1.03] tracking-[-0.045em] text-foreground">
-                    Мой VPN
-                  </h1>
-                </div>
-
-                <div className="shrink-0 rounded-full border border-emerald-500/25 bg-emerald-500/12 px-2.5 py-1 text-[10px] font-semibold text-emerald-300">
-                  Активна
-                </div>
-              </div>
-
-              <div className="mt-4 grid grid-cols-3 gap-2">
-                <div className="rounded-2xl border border-border/80 bg-secondary/35 px-3 py-2.5">
-                  <p className="text-[10px] text-muted-foreground">План</p>
-                  <p className="mt-1 text-sm font-black text-foreground">{plan?.name || 'Тариф'}</p>
-                </div>
-                <div className="rounded-2xl border border-border/80 bg-secondary/35 px-3 py-2.5">
-                  <p className="text-[10px] text-muted-foreground">Осталось</p>
-                  <p className="mt-1 text-sm font-black text-foreground">{getRemainingLabel(remainingDays)}</p>
-                </div>
-                <div className="rounded-2xl border border-border/80 bg-secondary/35 px-3 py-2.5">
-                  <p className="text-[10px] text-muted-foreground">Трафик</p>
-                  <p className="mt-1 text-sm font-black text-foreground">
-                    {formatTraffic(Number(sub.trafficUsed || 0))}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-3 flex items-center justify-between rounded-2xl border border-border/80 bg-secondary/25 px-3 py-2.5">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <CalendarDays className="h-4 w-4 text-primary" />
-                  <span className="text-[11px]">Доступ активен до окончания срока</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-300">
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  OK
+                  <h1 className="mt-2 text-lg font-bold text-foreground">Мой VPN</h1>
+                  <p className="mt-1 text-xs text-muted-foreground">Управляйте подключением и ключами</p>
                 </div>
               </div>
             </div>

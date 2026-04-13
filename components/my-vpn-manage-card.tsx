@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, Copy, Link2, ShieldCheck } from 'lucide-react'
+import { Check, Copy, Link2 } from 'lucide-react'
 import type { Plan, Subscription } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -77,11 +77,6 @@ export function MyVpnManageCard({
   return (
     <div className={cn('grain-surface relative overflow-hidden rounded-[26px] border border-border/80 bg-card/95 p-4 shadow-[0_24px_60px_-45px_rgba(0,0,0,0.8)]', className)}>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(120,130,255,0.08),transparent_48%)]" />
-      <img
-        src="/images/referral-hero.gif"
-        alt=""
-        className="pointer-events-none absolute -right-6 -top-4 h-[125%] w-[40%] rotate-[8deg] object-contain opacity-40"
-      />
 
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -100,21 +95,16 @@ export function MyVpnManageCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary">
-          <ShieldCheck className="h-3.5 w-3.5" />
-          Ключ активен
+        <div className="text-right">
+          <p className="text-[10px] text-muted-foreground">Осталось</p>
+          <p className="mt-0.5 text-base font-bold text-foreground">{getRemainingLabel(subscription?.expiresAt)}</p>
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-2">
+      <div className="mt-4 grid grid-cols-2 gap-2">
         <div className="rounded-2xl border border-border/80 bg-secondary/30 p-3">
           <p className="text-[10px] text-muted-foreground">Действует до</p>
           <p className="mt-1 text-sm font-bold text-foreground">До {formatDate(subscription?.expiresAt)}</p>
-        </div>
-
-        <div className="rounded-2xl border border-border/80 bg-secondary/30 p-3">
-          <p className="text-[10px] text-muted-foreground">Осталось</p>
-          <p className="mt-1 text-sm font-bold text-foreground">{getRemainingLabel(subscription?.expiresAt)}</p>
         </div>
 
         <div className="rounded-2xl border border-border/80 bg-secondary/30 p-3">
@@ -126,12 +116,9 @@ export function MyVpnManageCard({
       </div>
 
       <div className="mt-3 rounded-2xl border border-border/80 bg-secondary/20 p-3">
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Link2 className="h-4 w-4" />
-            <p className="text-[10px] font-medium uppercase tracking-[0.22em]">Ссылка подписки</p>
-          </div>
-          <p className="text-[10px] text-muted-foreground">Импорт в клиент</p>
+        <div className="mb-2 flex items-center gap-2 text-muted-foreground">
+          <Link2 className="h-4 w-4" />
+          <p className="text-[10px] font-medium uppercase tracking-[0.22em]">Ссылка подписки</p>
         </div>
 
         <div className="flex items-center gap-2">
